@@ -67,22 +67,15 @@ class ClanABS(models.Model):
 
     @property
     def get_users(self):
-        return (user for user in self.clan_users.all())
+        return self.clan_users.all()
 
     @property
     def users_count(self):
-        return self.clan_users.all().count()
+        return self.get_users.count()
 
     @property
     def get_messages(self):
-        messages = ({
-            'message': msg.text,
-            'type': msg.type,
-            'pub_date': msg.pub_date,
-            'user': msg.clan_user.user.username
-        }
-            for msg in self.chat.all())
-        return messages
+        return self.chat.all()
 
     def update_info(self, **kwargs):
         info = self.info.__dict__
@@ -126,13 +119,15 @@ class ClanABS(models.Model):
         clan_user = self.clan_users.filter(user=user)
         if clan_user.exists():
             clan_user = clan_user.first()
+            clan_user_role = clan_user.role
             clan_user.delete()
+
             if not self.users_count:
                 return
-            self.change_admin(clan_user)
+            self.change_admin(clan_user_role)
 
-    def change_admin(self, clan_user):
-        if clan_user.role == ClanUserRole.admin and not \
+    def change_admin(self, clan_user_role):
+        if clan_user_role == ClanUserRole.admin and not \
                 len(list(filter(lambda u: u.role == ClanUserRole.admin, self.get_users))):
             self.give_admin(self.oldest_user)
 

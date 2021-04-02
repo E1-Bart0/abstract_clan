@@ -21,9 +21,7 @@ class GameClanTestCase(TestCase):
         settings = {'open_close': False, }
         clan = GameClan.objects.create(host=user, name='TestCreate', info=info, settings=settings)
 
-        game_clan_user = next(clan.get_users)
-
-        self.assertEqual(user, game_clan_user.user)
+        self.assertEqual(user, clan.get_users.first().user)
         self.assertEqual([], list(clan.get_messages))
         self.assertEqual(info['description'], clan.info.description)
         self.assertEqual(self.info_rating_default, clan.info.rating)
