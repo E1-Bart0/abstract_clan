@@ -12,6 +12,8 @@ class ClanUserABS(models.Model):
     """
     Abstract model for Clan User.
     !!! When inherit: clan -> Ref to your Clan model needed with related_name 'clan_user'
+
+        Example:
         clan = models.ForeignKey(GameClan, on_delete=models.CASCADE, related_name='clan_users')
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
@@ -57,6 +59,8 @@ class ClanChatABS(models.Model):
     Abstract model for Clan Chat.
     !!! When inherit: clan -> Ref to your Clan model needed with related_name 'chat'
                       user -> Ref to your Clan User model needed with related_name 'user_msgs'
+
+        Example:
         clan = models.ForeignKey(GameClan, on_delete=models.CASCADE, related_name='chat')
         clan_user = models.ForeignKey(GameClanUser, on_delete=models.CASCADE, related_name='clan_user_msgs')
     """
@@ -75,8 +79,10 @@ class ClanManager(models.Manager):
     Clan Manager. Needed for Clan.objects.create
     !!! When inherit: info -> Ref to GameClanInfo
                       settings -> Ref to Game clanSettings
-    info = GameClanInfo
-    settings = GameClanSettings
+
+        Example:
+        info = GameClanInfo
+        settings = GameClanSettings
     """
     info = None
     settings = None
@@ -125,10 +131,10 @@ class ClanABS(models.Model):
                       settings -> Ref to your ClanSettings model needed.
                       objects -> Ref to your ClanManager model needed.
 
-    info = models.OneToOneField(GameClanInfo, on_delete=models.CASCADE)
-    settings = models.OneToOneField(GameClanSettings, on_delete=models.CASCADE)
-
-    objects = GameClanManager()
+        Example:
+        info = models.OneToOneField(GameClanInfo, on_delete=models.CASCADE)
+        settings = models.OneToOneField(GameClanSettings, on_delete=models.CASCADE)
+        objects = GameClanManager()
     """
     name = models.CharField(max_length=60, unique=True)
     info = None
@@ -143,7 +149,7 @@ class ClanABS(models.Model):
 
     @property
     def get_users(self):
-        """Getting all users by related name in ClanUser"""
+        """Getting all users by related name in ClanUser on Clan (clan_users)"""
         return self.clan_users.all()
 
     @property
@@ -153,11 +159,12 @@ class ClanABS(models.Model):
 
     @property
     def get_messages(self):
-        """Getting all messages by related_name on Clan in ClanChat"""
+        """Getting all messages by related_name on Clan in ClanChat (chat)"""
         return self.chat.all()
 
     @property
     def oldest_user(self):
+        """Getting oldest user by related_name on Clan in ClanUser (clan_users)"""
         return self.clan_users.order_by('entry').first()
 
     @staticmethod
