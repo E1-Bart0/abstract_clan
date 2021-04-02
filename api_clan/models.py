@@ -3,11 +3,17 @@ from django.db import models
 
 
 class ClanUserRole(models.IntegerChoices):
+    """Role Choices"""
     admin = 0, 'admin'
     player = 1, 'player'
 
 
 class ClanUserABS(models.Model):
+    """
+    Abstract model for Clan User.
+    !!! When inherit: clan -> Ref to your Clan model needed with related_name 'clan_user'
+        clan = models.ForeignKey(GameClan, on_delete=models.CASCADE, related_name='clan_users')
+    """
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
     role = models.PositiveSmallIntegerField(choices=ClanUserRole.choices, default=1)
     entry = models.DateTimeField(auto_now_add=True)
@@ -17,12 +23,16 @@ class ClanUserABS(models.Model):
         abstract = True
 
     def delete(self, *args, **kwargs):
+        """Deleting Clan Model if no users """
         if self.clan.users_count == 1:
             self.clan.delete()
         return super().delete(*args, **kwargs)
 
 
 class ClanInfoABS(models.Model):
+    """
+    Abstract model for Clan Info
+    """
     description = models.TextField(default='Clan description')
     rating = models.IntegerField(default=0)
 
@@ -31,6 +41,9 @@ class ClanInfoABS(models.Model):
 
 
 class ClanSettingsABS(models.Model):
+    """
+    Abstract model for Clan Settings
+    """
     open_close = models.BooleanField(default=True)
     min_rating = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -40,6 +53,13 @@ class ClanSettingsABS(models.Model):
 
 
 class ClanChatABS(models.Model):
+    """
+    Abstract model for Clan Chat.
+    !!! When inherit: clan -> Ref to your Clan model needed with related_name 'chat'
+                      user -> Ref to your Clan User model needed with related_name 'user_msgs'
+        clan = models.ForeignKey(GameClan, on_delete=models.CASCADE, related_name='chat')
+        clan_user = models.ForeignKey(GameClanUser, on_delete=models.CASCADE, related_name='clan_user_msgs')
+    """
     type = models.CharField(max_length=30, default='message')
     text = models.TextField(null=False)
     pub_date = models.DateTimeField(auto_now_add=True)
@@ -50,14 +70,70 @@ class ClanChatABS(models.Model):
         abstract = True
 
 
+class ClanManager(models.Manager):
+    """
+    Clan Manager. Needed for Clan.objects.create
+    !!! When inherit: info -> Ref to GameClanInfo
+                      settings -> Ref to Game clanSettings
+    info = GameClanInfo
+    settings = GameClanSettings
+    """
+    info = None
+    settings = None
+
+    def create(self, host, name, **kwargs):
+        """
+        Creating ClanInfo, ClanSettings, ClanUser(admin) with Clan creation
+
+        :param host: User
+        :param name: str
+        :param kwargs: {'info': kwargs, 'settings': kwargs}
+        :return: GameClan
+        """
+        params = {}
+        info, settings = self.init_info__settings(kwargs)
+
+        params['name'] = name
+        params['info'] = info
+        params['settings'] = settings
+
+        clan = super().create(**params)
+        clan.clan_users.create(user=host, clan=clan, role=0)
+        return clan
+
+    def init_info__settings(self, kwargs):
+        """Creating ClanInfo and ClanSettings with your params
+
+        :param kwargs: {'info' : {'description': str, ...}, {'settings' : {'min_rating' : int, ...}}
+        :return ClanInfo, ClanSettings
+        """
+        if 'info' in kwargs:
+            info = self.info.objects.create(**kwargs['info'])
+        else:
+            info = self.info.objects.create()
+        if 'settings' in kwargs:
+            settings = self.settings.objects.create(**kwargs['settings'])
+        else:
+            settings = self.settings.objects.create()
+        return info, settings
+
+
 class ClanABS(models.Model):
+    """
+    Abstract model for Clan.
+    !!! When inherit: info -> Ref to your ClanInfo model needed.
+                      settings -> Ref to your ClanSettings model needed.
+                      objects -> Ref to your ClanManager model needed.
+
+    info = models.OneToOneField(GameClanInfo, on_delete=models.CASCADE)
+    settings = models.OneToOneField(GameClanSettings, on_delete=models.CASCADE)
+
+    objects = GameClanManager()
+    """
     name = models.CharField(max_length=60, unique=True)
     info = None
     settings = None
     objects = None
-
-    clan_users = None
-    chat = None
 
     def __str__(self):
         return self.name
@@ -67,55 +143,79 @@ class ClanABS(models.Model):
 
     @property
     def get_users(self):
+        """Getting all users by related name in ClanUser"""
         return self.clan_users.all()
 
     @property
     def users_count(self):
+        """Getting users count in clan"""
         return self.get_users.count()
 
     @property
     def get_messages(self):
+        """Getting all messages by related_name on Clan in ClanChat"""
         return self.chat.all()
-
-    def update_info(self, **kwargs):
-        info = self.info.__dict__
-        for key, value in kwargs.items():
-            if key not in info:
-                raise ModuleNotFoundError(f'Not field "{key}" in Clan Info')
-            info[key] = value
-        self.info.save()
-
-    def update_settings(self, **kwargs):
-        settings = self.settings.__dict__
-        for key, value in kwargs.items():
-            if key not in settings:
-                raise ModuleNotFoundError(f'Not field "{key}" in Clan Settings')
-            settings[key] = value
-        self.settings.save()
 
     @property
     def oldest_user(self):
         return self.clan_users.order_by('entry').first()
 
+    @staticmethod
+    def _update(model, new_values, model_name):
+        """Updating model by new_values"""
+        model_dict = model.__dict__
+        for key, value in new_values.items():
+            if key not in model_dict:
+                raise ModuleNotFoundError(f'Not field "{key}" in {model_name}')
+            model_dict[key] = value
+        model.save()
+
+    def update_info(self, **kwargs):
+        """Changing ClanInfo model"""
+        self._update(self.info, kwargs, 'Clan Info')
+
+    def update_settings(self, **kwargs):
+        """Changing ClanInfo model"""
+        self._update(self.settings, kwargs, 'Clan Settings')
+
     def send_msg(self, user, **kwargs):
-        clan_user = self.clan_users.filter(user=user).first()
-        msg = self.chat.create(clan=self, clan_user=clan_user, type='message', **kwargs)
-        return msg
+        """
+        Creating new ClanMessage with type message
+        :param user: User
+        :param kwargs: {'text': str}
+        :return: ClanMessage
+        """
+        return self._create_msg_with_type(user=user, type='message', kwargs=kwargs)
 
     def send_request(self, user, **kwargs):
+        """
+        Creating new ClanMessage with type request
+        :param user: User
+        :param kwargs: {'text': str}
+        :return: ClanMessage
+        """
+        return self._create_msg_with_type(user=user, type='request', kwargs=kwargs)
+
+    def _create_msg_with_type(self, user, type, kwargs):
+        """Creating new ClanMessage by related_name on Clan in ClanChat (chat) and on Clan in ClanUser (clan_users)"""
         clan_user = self.clan_users.filter(user=user).first()
-        msg = self.chat.create(clan=self, clan_user=clan_user, type='request', **kwargs)
+        msg = self.chat.create(clan=self, clan_user=clan_user, type=type, **kwargs)
         return msg
 
     def get_all_user_msgs(self, user):
+        """Get all user ClanMessage by related_name on ClanUser in ClanChat (clan_user_msgs)
+             and on Clan in ClanUser (clan_users)"""
         clan_user = self.clan_users.filter(user=user).first()
         return clan_user.clan_user_msgs.all()
 
     def join(self, user, **kwargs):
+        """Create new ClanUser"""
         clan_user = self.clan_users.create(clan=self, user=user, **kwargs)
         return clan_user
 
     def exit(self, user):
+        """Deleting ClanUser. If user is admin checking others users and if no more admins in clan,
+            making oldest user admin"""
         clan_user = self.clan_users.filter(user=user)
         if clan_user.exists():
             clan_user = clan_user.first()
@@ -127,11 +227,13 @@ class ClanABS(models.Model):
             self.change_admin(clan_user_role)
 
     def change_admin(self, clan_user_role):
+        """Give admin to oldest user if no more admins in clan"""
         if clan_user_role == ClanUserRole.admin and not \
                 len(list(filter(lambda u: u.role == ClanUserRole.admin, self.get_users))):
             self.give_admin(self.oldest_user)
 
     def give_admin(self, user):
+        """Giving admin to user. Needed related_name in ClanUsers on Clan (clan_users)"""
         clan_user = self.clan_users.filter(user=user)
         if clan_user.exists():
             clan_user = clan_user.first()
@@ -139,7 +241,8 @@ class ClanABS(models.Model):
             clan_user.save()
 
     def delete(self, *args, **kwargs):
+        """Deleting ClanInfo and ClanSettings while ClanDelete
+            ClanUsers and ClanChats will be deleted automatically"""
         self.info.delete()
         self.settings.delete()
         return super().delete(*args, **kwargs)
-
