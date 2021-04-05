@@ -26,7 +26,7 @@ class ClanUserABS(models.Model):
 
     def delete(self, *args, **kwargs):
         """Deleting Clan Model if no users """
-        if self.clan.users_count == 1:
+        if self.clan.members_count == 1:
             self.clan.delete()
         return super().delete(*args, **kwargs)
 
@@ -153,7 +153,7 @@ class ClanABS(models.Model):
         return self.clan_users.all()
 
     @property
-    def users_count(self):
+    def members_count(self):
         """Getting users count in clan"""
         return self.get_users.count()
 
@@ -166,6 +166,11 @@ class ClanABS(models.Model):
     def oldest_user(self):
         """Getting oldest user by related_name on Clan in ClanUser (clan_users)"""
         return self.clan_users.order_by('entry').first()
+
+    @property
+    def get_all_admins(self):
+        """Getting all users if they admin"""
+        return self.get_users.filter(role=ClanUserRole.admin).all()
 
     @staticmethod
     def _update(model, new_values, model_name):
@@ -229,7 +234,7 @@ class ClanABS(models.Model):
             clan_user_role = clan_user.role
             clan_user.delete()
 
-            if not self.users_count:
+            if not self.members_count:
                 return
             self.change_admin(clan_user_role)
 
@@ -237,14 +242,14 @@ class ClanABS(models.Model):
         """Give admin to oldest user if no more admins in clan"""
         if clan_user_role == ClanUserRole.admin and not \
                 len(list(filter(lambda u: u.role == ClanUserRole.admin, self.get_users))):
-            self.give_admin(self.oldest_user)
+            self.give_role_to(self.oldest_user)
 
-    def give_admin(self, user):
+    def give_role_to(self, user, role=ClanUserRole.admin):
         """Giving admin to user. Needed related_name in ClanUsers on Clan (clan_users)"""
         clan_user = self.clan_users.filter(user=user)
         if clan_user.exists():
             clan_user = clan_user.first()
-            clan_user.role = ClanUserRole.admin
+            clan_user.role = role
             clan_user.save()
 
     def delete(self, *args, **kwargs):

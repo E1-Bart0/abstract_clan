@@ -72,7 +72,7 @@ class GameClanTestCase(TestCase):
         n = 5
         self._create_n_users(n)
 
-        self.assertEqual(n + 1, self.clan.users_count)
+        self.assertEqual(n + 1, self.clan.members_count)
 
     def test_exit__give_admin__oldest_user(self):
         n = 5
@@ -82,7 +82,7 @@ class GameClanTestCase(TestCase):
             oldest_user, next_oldest_user = GameClanUser.objects.order_by('entry')[0:2]
             self.clan.exit(user=oldest_user)
             next_oldest_user.refresh_from_db()
-            self.assertEqual(n - i, self.clan.users_count)
+            self.assertEqual(n - i, self.clan.members_count)
             self.assertEqual(0, next_oldest_user.role)
 
     def _create_n_users(self, n, role=1):
@@ -122,4 +122,8 @@ class GameClanTestCase(TestCase):
                                      (GameClanInfo, GameClanSettings, GameClanUser)):
             with self.assertRaises(main_model.DoesNotExist):
                 model.refresh_from_db()
+
+    def test_get_all_admins(self):
+        self._create_n_users(5, role=0)
+        self.assertEqual(6, self.clan.get_all_admins.count())
 

@@ -4,23 +4,38 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from game.models import GameClan
-from game.serializer import ClanListSerializer
+from game.serializer import ClanListSerializer, ClanUsersListSerializer, ClanChatSerializer
 
 
-class GetAll(APIView):
-    def get(self, request):
-        clan = GameClan.objects.first()
+class ClanUsersList(ListAPIView):
+    serializer_class = ClanUsersListSerializer
+    model = serializer_class.Meta.model
 
-        info = clan.info
-        chat_messages = [{'msg': m.text, 'user': m.host.host.username} for m in clan.chat.all()]
-        participants = [u.host.username for u in clan.clan_user.all()]
+    def get_queryset(self):
+        clan_name = self.request.query_params.get('clan')
+        if clan_name:
+            queryset = self.model.objects.filter(clan__name=clan_name)
+        else:
+            queryset = self.model.objects.all()
+        return queryset
 
-        response = {
-            'clan_name': clan.name,
-            'info': info.description,
-            'participants': participants,
-            'msgs': chat_messages,
-        }
 
-        print(response)
-        return Response(response, status=status.HTTP_200_OK)
+class ClanList(ListAPIView):
+    serializer_class = ClanListSerializer
+    model = serializer_class.Meta.model
+
+    def get_queryset(self):
+        return self.model.objects.all()
+
+
+class ClanChatList(ListAPIView):
+    serializer_class = ClanChatSerializer
+    model = serializer_class.Meta.model
+
+    def get_queryset(self):
+        clan_name = self.request.query_params.get('clan')
+        if clan_name:
+            queryset = self.model.objects.filter(clan__name=clan_name)
+        else:
+            queryset = self.model.objects.all()
+        return queryset

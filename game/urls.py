@@ -14,8 +14,10 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import path
-from .views import GetAll
+from .views import ClanUsersList, ClanList, ClanChatList
 
 urlpatterns = [
-    path('list/', GetAll.as_view())
+    path('users/', ClanUsersList.as_view(), name='users-list'),
+    path('clans/', ClanList.as_view(), name='clans-list'),
+    path('chat/', ClanChatList.as_view(), name='chat-list')
 ]
