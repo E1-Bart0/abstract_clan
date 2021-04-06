@@ -1,129 +1,72 @@
+import django
 from django.contrib.auth.models import User
 from django.test import TestCase
 
-from game.models import GameClan, GameClanUser, GameClanInfo, GameClanSettings, GameClanChat
+from game.models import GameClan, GameClanUser
 
 
 class GameClanTestCase(TestCase):
 
     def setUp(self) -> None:
         self.user = User.objects.create_user(username='Test', password='bla4321')
+        self.clan = GameClan.create(creator=self.user, name='TestClan')
 
-        self.clan = GameClan.objects.create(host=self.user, name='Test')
-        self.info_desc_default = 'Clan description'
-        self.info_rating_default = 0
-        self.settings_open_close_default = True
-        self.settings__min_rating_default = 0
+    def test_creation_clan(self):
+        self.clan.refresh_from_db()
+        self.assertEqual(self.clan.creator, self.user)
+        self.assertEqual(self.clan.creator.clan_profile.clan, self.clan)
 
-    def test_create_game_clan(self):
-        user = User.objects.create_user(username='TestCreate', password='bla4321')
-        info = {'description': 'TestCreation description', }
-        settings = {'open_close': False, }
-        clan = GameClan.objects.create(host=user, name='TestCreate', info=info, settings=settings)
+        with self.assertRaises(django.db.utils.IntegrityError):
+            clan = GameClan.create(creator=self.user, name='Test')
 
-        self.assertEqual(user, clan.get_users.first().user)
-        self.assertEqual([], list(clan.get_messages))
-        self.assertEqual(info['description'], clan.info.description)
-        self.assertEqual(self.info_rating_default, clan.info.rating)
-        self.assertEqual(settings['open_close'], clan.settings.open_close)
-        self.assertEqual(self.settings__min_rating_default, clan.settings.min_rating)
-        self.assertEqual('TestCreate', clan.name)
+    def test_add__remove(self):
+        new_user = self._add_n_users(1)[0]
+        self.clan.add(new_user)
+        self.assertEqual([self.user, new_user], [clan_user.user for clan_user in self.clan.clan_users.all()])
 
-    def test_update_info(self):
-        description = 'test_update'
-        rating = 54321
-        self.clan.update_info(description=description, rating=rating)
+        self.clan.remove(new_user)
+        self.assertEqual([self.user], [clan_user.user for clan_user in self.clan.clan_users.all()])
+        self.clan.remove(self.user)
+        self._test_clan_does_not_exist()
+
+    def test_join__leave(self):
+        new_user = self._add_n_users(1)[0]
+        GameClanUser.join(user=new_user, clan=self.clan)
+        self.assertEqual([self.user, new_user], [clan_user.user for clan_user in self.clan.clan_users.all()])
+
+        new_user.clan_profile.leave()
+
+        self.assertEqual([self.user], [clan_user.user for clan_user in self.clan.clan_users.all()])
+        self.user.clan_profile.leave()
+        self._test_clan_does_not_exist()
+
+    def _test_clan_does_not_exist(self):
+        with self.assertRaises(GameClan.DoesNotExist):
+            self.clan.refresh_from_db()
+
+    @staticmethod
+    def _add_n_users(n):
+        return [User.objects.create_user(username=f'Test{user}', password='bla4321') for user in range(n)]
+
+    def test_next_creator_when_leaving(self):
+        new_user = self._add_n_users(1)[0]
+        self.clan.add(new_user)
+        self.clan.remove(self.user)
         self.clan.refresh_from_db()
 
-        self.assertEqual(self.clan.info.description, description)
-        self.assertEqual(self.clan.info.rating, rating)
+        self.assertEqual(new_user, self.clan.creator)
 
-    def test_not_valid_update_info(self):
-        description = 'test_update'
-        rating = 54321
-        not_needed = True
-        with self.assertRaises(ModuleNotFoundError):
-            self.clan.update_info(description=description, rating=rating, not_needed=not_needed)
+    def test_send_messages(self):
+        text = 'TestMessage'
+        msg = self.clan.chat.send(user=self.user, text=text)
+        msg.refresh_from_db()
 
-        rating = 'NOT INT'
-        with self.assertRaises(ValueError):
-            self.clan.update_info(description=description, rating=rating)
+        self.assertEqual(self.clan.chat.msgs.first().text, text)
+        self.assertEqual(self.user.my_msgs.first().text, text)
 
-    def test_update_settings(self):
-        open_close = False
-        min_rating = 10
-        self.clan.update_settings(open_close=open_close, min_rating=min_rating)
-        self.clan.refresh_from_db()
-
-        self.assertEqual(self.clan.settings.open_close, open_close)
-        self.assertEqual(self.clan.settings.min_rating, min_rating)
-
-    def test_not_valid_update_settings(self):
-        open_close = False
-        min_rating = 10
-        not_needed = True
-        with self.assertRaises(ModuleNotFoundError):
-            self.clan.update_settings(open_close=open_close, min_rating=min_rating, not_needed=not_needed)
-
-        with self.assertRaises(ValueError):
-            self.clan.update_settings(open_close=open_close, min_rating='aa')
-
-    def test_join__users_count(self):
-        n = 5
-        self._create_n_users(n)
-
-        self.assertEqual(n + 1, self.clan.members_count)
-
-    def test_exit__give_admin__oldest_user(self):
-        n = 5
-        self._create_n_users(n)
-
-        for i in range(n):
-            oldest_user, next_oldest_user = GameClanUser.objects.order_by('entry')[0:2]
-            self.clan.exit(user=oldest_user)
-            next_oldest_user.refresh_from_db()
-            self.assertEqual(n - i, self.clan.members_count)
-            self.assertEqual(0, next_oldest_user.role)
-
-    def _create_n_users(self, n, role=1):
-        for i in range(n):
-            user = User.objects.create_user(username=f'Test{i}', password='bla54321')
-            self.clan.join(user=user, role=role)
-
-    def test_msg_send(self):
-        message = 'Test msg'
-        self.clan.send_msg(user=self.user, text=message)
-        msg = GameClanChat.objects.filter(clan=self.clan).first()
-        self.assertEqual(msg.text, message)
-        self.assertEqual(msg.type, 'message')
-
-    def test_msg_request(self):
-        message = 'Test msg'
-        self.clan.send_request(user=self.user, text=message)
-        msg = GameClanChat.objects.filter(clan=self.clan).first()
-        self.assertEqual(msg.text, message)
-        self.assertEqual(msg.type, 'request')
-
-    def test_get_all_user_msgs(self):
-        msgs = [self.clan.send_msg(user=self.user, text=f'Text{i} Msgs') for i in range(5)]
-        saved_msg = self.clan.get_all_user_msgs(user=self.user)
-        msgs_text = [f'Text{i} Msgs' for i in range(5)]
-        self.assertEqual(msgs_text, [msg.text for msg in saved_msg])
-        self.assertEqual(['Test'] * 5, [msg.clan_user.user.username for msg in saved_msg])
-
-    def test_exit__deleting_clan(self):
-        info = self.clan.info
-        settings = self.clan.settings
-        users = self.clan.clan_users.first()
-
-        self.clan.exit(self.user)
-
-        for model, main_model in zip((info, settings, users),
-                                     (GameClanInfo, GameClanSettings, GameClanUser)):
-            with self.assertRaises(main_model.DoesNotExist):
-                model.refresh_from_db()
-
-    def test_get_all_admins(self):
-        self._create_n_users(5, role=0)
-        self.assertEqual(6, self.clan.get_all_admins.count())
-
+    def test_max_150_messages(self):
+        max_count = 150
+        create_count = 200
+        [self.clan.chat.send(user=self.user, text=f'TestMsg{i}') for i in range(create_count)]
+        self.assertEqual(max_count, self.clan.chat.msgs.count())
+        self.assertEqual(self.clan.chat.msgs.order_by('created_at').first().text, f'TestMsg{create_count-max_count}')

@@ -1,32 +1,15 @@
+from django.contrib.auth.models import User
 from django.db import models
 from api_clan.models import (
     ClanABS,
     ClanUserABS,
     ClanChatABS,
-    ClanSettingsABS,
-    ClanInfoABS,
-    ClanManager
+    ChatMessages
 )
 
 
-class GameClanInfo(ClanInfoABS):
-    pass
-
-
-class GameClanSettings(ClanSettingsABS):
-    pass
-
-
-class GameClanManager(ClanManager):
-    info = GameClanInfo
-    settings = GameClanSettings
-
-
 class GameClan(ClanABS):
-    info = models.OneToOneField(GameClanInfo, on_delete=models.CASCADE)
-    settings = models.OneToOneField(GameClanSettings, on_delete=models.CASCADE)
-
-    objects = GameClanManager()
+    pass
 
 
 class GameClanUser(ClanUserABS):
@@ -34,5 +17,9 @@ class GameClanUser(ClanUserABS):
 
 
 class GameClanChat(ClanChatABS):
-    clan = models.ForeignKey(GameClan, on_delete=models.CASCADE, related_name='chat')
-    clan_user = models.ForeignKey(GameClanUser, on_delete=models.CASCADE, related_name='clan_user_msgs')
+    clan = models.ForeignKey(GameClan, on_delete=models.CASCADE, related_name='chats')
+
+
+class GameChatMessage(ChatMessages):
+    clan_chat = models.ForeignKey(GameClanChat, on_delete=models.CASCADE, related_name='msgs')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='my_msgs')
