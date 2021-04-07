@@ -8,8 +8,16 @@ from api_clan.models import (
 )
 
 
+class Game(models.Model):
+    game = models.CharField(max_length=30, default='Game')
+    slug = models.CharField(max_length=30, default='game')
+
+    def __str__(self):
+        return self.game
+
+
 class GameClan(ClanABS):
-    pass
+    game = models.ForeignKey(Game, on_delete=models.CASCADE)
 
 
 class GameClanUser(ClanUserABS):
@@ -17,7 +25,10 @@ class GameClanUser(ClanUserABS):
 
 
 class GameClanChat(ClanChatABS):
-    clan = models.ForeignKey(GameClan, on_delete=models.CASCADE, related_name='chats')
+    chat_id = models.AutoField(primary_key=True)
+    clan = models.ForeignKey(GameClan, on_delete=models.CASCADE, related_name='chats', unique=False)
+    name = models.CharField(max_length=30, null=True, unique=True)
+
 
 
 class GameChatMessage(ChatMessages):

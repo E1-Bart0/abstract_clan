@@ -42,6 +42,7 @@ class ClanChatABS(models.Model):
         Example:
         clan = models.ForeignKey(GameClan, on_delete=models.CASCADE, related_name='chats')
     """
+    chat_id = None
     clan = None
 
     class Meta:
@@ -55,6 +56,9 @@ class ClanChatABS(models.Model):
         msgs_count = self.msgs.all().count()
         if msgs_count >= max_count:
             [msg.delete() for msg in self.msgs.order_by('created_at')[:msgs_count - max_count + 1]]
+
+    def __str__(self):
+        return f'{self.clan.name}.Chat{self.chat_id}'
 
 
 class ChatMessages(models.Model):

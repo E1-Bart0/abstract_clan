@@ -2,14 +2,15 @@ import django
 from django.contrib.auth.models import User
 from django.test import TestCase
 
-from game.models import GameClan, GameClanUser
+from game.models import GameClan, GameClanUser, Game
 
 
 class GameClanTestCase(TestCase):
 
     def setUp(self) -> None:
+        self.game = Game.objects.create()
         self.user = User.objects.create_user(username='Test', password='bla4321')
-        self.clan = GameClan.create(creator=self.user, name='TestClan')
+        self.clan = GameClan.create(creator=self.user, name='TestClan', game=self.game)
 
     def test_creation_clan(self):
         self.clan.refresh_from_db()
