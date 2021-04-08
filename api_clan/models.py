@@ -1,16 +1,17 @@
-from django.contrib.auth.models import User
 from django.db import models
+User = 'myuser.User'
 
 
-class ClanUserABS(models.Model):
+class ClanMemberABS(models.Model):
     """
     Abstract model for Clan User.
-    !!! When inherit: clan -> Ref to your Clan model needed with related_name 'clan_users'
+    !!! When inherit: clan -> Ref to your Clan model needed with related_name 'members'
 
         Example:
-        clan = models.ForeignKey(GameClan, on_delete=models.CASCADE, related_name='clan_users')
+        clan = models.ForeignKey(GameClan, on_delete=models.CASCADE, related_name='members')
     """
-    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, related_name='clan_profile')
+    user = models.OneToOneField(User, on_delete=models.CASCADE,
+                                primary_key=True, related_name='clan_member')
     clan = None
     joined_at = models.DateTimeField(auto_now_add=True)
 
@@ -18,9 +19,9 @@ class ClanUserABS(models.Model):
         abstract = True
 
     def delete(self, *args, **kwargs):
-        """Deleting Clan Model if no users and remove msgs"""
-        self.user.my_msgs.all().delete()
-        if self.clan.clan_users.count() == 1:
+        """Deleting Clan Model if no users and remove messages"""
+        self.user.my_messages.all().delete()
+        if self.clan.members.count() == 1:
             self.clan.delete()
         return super().delete(*args, **kwargs)
 
@@ -33,6 +34,9 @@ class ClanUserABS(models.Model):
         """Delete clan_user when he leaving"""
         self.delete()
 
+    def __str__(self):
+        return f'Clan member: {self.user.username}'
+
 
 class ClanChatABS(models.Model):
     """
@@ -42,48 +46,55 @@ class ClanChatABS(models.Model):
         Example:
         clan = models.ForeignKey(GameClan, on_delete=models.CASCADE, related_name='chats')
     """
-    chat_id = None
+    chat_id = models.AutoField(primary_key=True)
     clan = None
+    name = models.CharField(max_length=30, null=True, unique=True)
 
     class Meta:
         abstract = True
 
     def send(self, user, **kwargs):
-        self.max_150_msgs()
-        return self.msgs.create(user=user, **kwargs)
+        self._crop_messages()
+        return self.messages.create(user=user, **kwargs)
 
-    def max_150_msgs(self, max_count=150):
-        msgs_count = self.msgs.all().count()
-        if msgs_count >= max_count:
-            [msg.delete() for msg in self.msgs.order_by('created_at')[:msgs_count - max_count + 1]]
+    def _crop_messages(self, max_messages=150):
+        messages_count = self.messages.all().count()
+        if messages_count >= max_messages:
+            [msg.delete() for msg in self.messages.order_by('created_at')[:messages_count - max_messages + 1]]
 
     def __str__(self):
-        return f'{self.clan.name}.Chat{self.chat_id}'
+        return f'Clan {self.clan.name} | Chat: {self.name}'
 
 
-class ChatMessages(models.Model):
+class ChatMessageABS(models.Model):
     """
     Abstract model for Chat Messages.
-    !!! When inherit: clan_chat -> Ref to your Chat model needed with related_name 'msgs'
+    !!! When inherit: clan_chat -> Ref to your Chat model needed with related_name 'messages'
 
         Example:
-        clan_chat = models.ForeignKey(GameClanChat, on_delete=models.CASCADE, related_name='msgs')
+        clan_chat = models.ForeignKey(GameClanChat, on_delete=models.CASCADE, related_name='messages')
     """
-
+    id = models.AutoField(primary_key=True)
     clan_chat = None
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='my_msgs')
-    type = models.CharField(max_length=30, default='message')
-    text = models.TextField(null=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='my_messages')
     created_at = models.DateTimeField(auto_now_add=True)
+    type = models.CharField(max_length=30)
+    text = None
 
     class Meta:
         abstract = True
+
+    def __str__(self):
+        return f'Clan name: {self.clan_chat.clan.name}| Chat: {self.clan_chat.name}'
 
 
 class ClanABS(models.Model):
     """
     Abstract model for Clan.
     !!! When inherit: game -> Ref to your Game model.
+
+        Example:
+        game = models.ForeignKey(Game, on_delete=models.CASCADE)
     """
     name = models.CharField(max_length=60, unique=True)
     description = models.TextField(default=' ')
@@ -98,6 +109,10 @@ class ClanABS(models.Model):
     class Meta:
         abstract = True
 
+    @property
+    def chat(self):
+        return self.chats.first()
+
     @classmethod
     def create(cls, **kwargs):
         """
@@ -107,29 +122,26 @@ class ClanABS(models.Model):
         clan.save()
         clan.add(user=kwargs['creator'])
         try:
-            clan.chats.create(clan=clan)
+            clan.chats.create(clan=clan, name=clan.name)
         except AttributeError:
             pass
         return clan
 
-    def next_creator(self):
+    def change_creator(self):
         """Changing Clan creator to oldest user"""
-        self.creator = self.clan_users.order_by('joined_at').first().user
+        clan_member = self.members.order_by('joined_at').first()
+        self.creator = clan_member.user
         self.save(update_fields=['creator'])
 
     def add(self, user, **kwargs):
         """Create new ClanUser"""
-        clan_user = self.clan_users.create(clan=self, user=user, **kwargs)
+        clan_user = self.members.create(clan=self, user=user, **kwargs)
         return clan_user
 
     def remove(self, user):
         """Deleting ClanUser. If user is admin checking others users and if no more admins in clan,
             making oldest user admin"""
-        user.clan_profile.delete()
-        if self.creator == user and self.clan_users.count():
-            self.next_creator()
+        user.clan_member.delete()
+        if self.creator == user and self.members.count():
+            self.change_creator()
 
-    @property
-    def chat(self):
-        """:return ClanChat"""
-        return self.chats.first()

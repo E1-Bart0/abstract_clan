@@ -1,8 +1,8 @@
 import django
-from django.contrib.auth.models import User
 from django.test import TestCase
 
-from game.models import GameClan, GameClanUser, Game
+from game.models import GameClan, GameClanMember, Game
+from myuser.models import User
 
 
 class GameClanTestCase(TestCase):
@@ -15,7 +15,7 @@ class GameClanTestCase(TestCase):
     def test_creation_clan(self):
         self.clan.refresh_from_db()
         self.assertEqual(self.clan.creator, self.user)
-        self.assertEqual(self.clan.creator.clan_profile.clan, self.clan)
+        self.assertEqual(self.clan.creator.clan_member.clan, self.clan)
 
         with self.assertRaises(django.db.utils.IntegrityError):
             clan = GameClan.create(creator=self.user, name='Test')
@@ -23,22 +23,22 @@ class GameClanTestCase(TestCase):
     def test_add__remove(self):
         new_user = self._add_n_users(1)[0]
         self.clan.add(new_user)
-        self.assertEqual([self.user, new_user], [clan_user.user for clan_user in self.clan.clan_users.all()])
+        self.assertEqual([self.user, new_user], [clan_member.user for clan_member in self.clan.members.all()])
 
         self.clan.remove(new_user)
-        self.assertEqual([self.user], [clan_user.user for clan_user in self.clan.clan_users.all()])
+        self.assertEqual([self.user], [clan_member.user for clan_member in self.clan.members.all()])
         self.clan.remove(self.user)
         self._test_clan_does_not_exist()
 
     def test_join__leave(self):
         new_user = self._add_n_users(1)[0]
-        GameClanUser.join(user=new_user, clan=self.clan)
-        self.assertEqual([self.user, new_user], [clan_user.user for clan_user in self.clan.clan_users.all()])
+        GameClanMember.join(user=new_user, clan=self.clan)
+        self.assertEqual([self.user, new_user], [clan_member.user for clan_member in self.clan.members.all()])
 
-        new_user.clan_profile.leave()
+        new_user.clan_member.leave()
 
-        self.assertEqual([self.user], [clan_user.user for clan_user in self.clan.clan_users.all()])
-        self.user.clan_profile.leave()
+        self.assertEqual([self.user], [clan_member.user for clan_member in self.clan.members.all()])
+        self.user.clan_member.leave()
         self._test_clan_does_not_exist()
 
     def _test_clan_does_not_exist(self):
@@ -62,12 +62,12 @@ class GameClanTestCase(TestCase):
         msg = self.clan.chat.send(user=self.user, text=text)
         msg.refresh_from_db()
 
-        self.assertEqual(self.clan.chat.msgs.first().text, text)
-        self.assertEqual(self.user.my_msgs.first().text, text)
+        self.assertEqual(self.clan.chat.messages.first().text, text)
+        self.assertEqual(self.user.my_messages.first().text, text)
 
     def test_max_150_messages(self):
         max_count = 150
         create_count = 200
         [self.clan.chat.send(user=self.user, text=f'TestMsg{i}') for i in range(create_count)]
-        self.assertEqual(max_count, self.clan.chat.msgs.count())
-        self.assertEqual(self.clan.chat.msgs.order_by('created_at').first().text, f'TestMsg{create_count-max_count}')
+        self.assertEqual(max_count, self.clan.chat.messages.count())
+        self.assertEqual(self.clan.chat.messages.order_by('created_at').first().text, f'TestMsg{create_count-max_count}')

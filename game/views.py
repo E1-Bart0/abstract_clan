@@ -1,41 +1,29 @@
 from rest_framework import status
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListCreateAPIView
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from game.models import GameClan
-from game.serializer import ClanListSerializer, ClanUsersListSerializer, ClanChatSerializer
+from game.serializer import ClanListSerializer
 
 
-class ClanUsersList(ListAPIView):
-    serializer_class = ClanUsersListSerializer
-    model = serializer_class.Meta.model
-
-    def get_queryset(self):
-        clan_name = self.request.query_params.get('clan')
-        if clan_name:
-            queryset = self.model.objects.filter(clan__name=clan_name)
-        else:
-            queryset = self.model.objects.all()
-        return queryset
-
-
-class ClanList(ListAPIView):
+class ListCreateClanView(ListCreateAPIView):
     serializer_class = ClanListSerializer
     model = serializer_class.Meta.model
 
     def get_queryset(self):
         return self.model.objects.all()
 
-
-class ClanChatList(ListAPIView):
-    serializer_class = ClanChatSerializer
-    model = serializer_class.Meta.model
-
-    def get_queryset(self):
-        clan_name = self.request.query_params.get('clan')
-        if clan_name:
-            queryset = self.model.objects.filter(clan__name=clan_name)
+    def post(self, request, *args, **kwargs):
+        checked_data = self.serializer_class(data=request.data, context={'request': request})
+        if checked_data.is_valid():
+            print(checked_data.data)
+            checked_data.save()
+            return Response({}, status.HTTP_201_CREATED)
         else:
-            queryset = self.model.objects.all()
-        return queryset
+            print('aa', checked_data.errors)
+            return Response(checked_data.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+

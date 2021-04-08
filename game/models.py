@@ -1,11 +1,11 @@
-from django.contrib.auth.models import User
 from django.db import models
 from api_clan.models import (
     ClanABS,
-    ClanUserABS,
+    ClanMemberABS,
     ClanChatABS,
-    ChatMessages
+    ChatMessageABS
 )
+from myuser.models import User
 
 
 class Game(models.Model):
@@ -20,17 +20,31 @@ class GameClan(ClanABS):
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
 
 
-class GameClanUser(ClanUserABS):
-    clan = models.ForeignKey(GameClan, on_delete=models.CASCADE, related_name='clan_users')
+class GameClanMember(ClanMemberABS):
+    clan = models.ForeignKey(GameClan, on_delete=models.CASCADE, related_name='members')
 
 
 class GameClanChat(ClanChatABS):
-    chat_id = models.AutoField(primary_key=True)
-    clan = models.ForeignKey(GameClan, on_delete=models.CASCADE, related_name='chats', unique=False)
-    name = models.CharField(max_length=30, null=True, unique=True)
+    clan = models.ForeignKey(GameClan, on_delete=models.CASCADE, related_name='chats',
+                             unique=False)
 
 
+class GameChatTextMessage(ChatMessageABS):
+    clan_chat = models.ForeignKey(GameClanChat, on_delete=models.CASCADE, related_name='messages')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='my_messages')
+    type = models.CharField(max_length=30, default='message')
+    text = models.TextField()
 
-class GameChatMessage(ChatMessages):
-    clan_chat = models.ForeignKey(GameClanChat, on_delete=models.CASCADE, related_name='msgs')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='my_msgs')
+
+class GameChatRequestResource(ChatMessageABS):
+    clan_chat = models.ForeignKey(GameClanChat, on_delete=models.CASCADE, related_name='resource_requests')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='my_resource_requests')
+    type = models.CharField(max_length=30, default='resource_request')
+    text = models.CharField(default='This is a resource request', max_length=20)
+
+
+class GameChatRequestItem(ChatMessageABS):
+    clan_chat = models.ForeignKey(GameClanChat, on_delete=models.CASCADE, related_name='items_requests')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='my_items_requests')
+    type = models.CharField(max_length=30, default='request_item')
+    text = models.CharField(default='This is a item request', max_length=20)

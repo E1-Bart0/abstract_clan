@@ -1,16 +1,26 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
 from django.db import models
-from django.forms import Textarea, ModelForm
+from django.forms import Textarea
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 
+from myuser.models import User
+from .apps import GameConfig
 from .models import (
     Game,
     GameClan,
-    GameClanUser,
-    GameClanChat, GameChatMessage,
-
+    GameClanMember,
+    GameClanChat,
+    GameChatTextMessage,
+    GameChatRequestItem,
+    GameChatRequestResource,
 )
+
+admin.site.register(User, UserAdmin)
+
+BASEDIR = GameConfig.name
+ADMIN_URL = lambda path: BASEDIR + '_' + BASEDIR + path + '_change'
 
 
 def _link_to(objects, admin_name, args, name):
@@ -19,74 +29,29 @@ def _link_to(objects, admin_name, args, name):
     return mark_safe(link)
 
 
-@admin.register(Game)
-class GameAdmin(admin.ModelAdmin):
-    list_display = ['game', 'slug']
-
-
-@admin.register(GameClanUser)
-class GameClanUserAdmin(admin.ModelAdmin):
-    list_display = ['clan_user', 'clan_link', 'user_link', ]
-
-    @staticmethod
-    def clan_user(objects):
-        return objects.user
-
-    @staticmethod
-    def clan_link(objects):
-        return _link_to(objects, 'game_gameclan_change', objects.clan_id, objects.clan)
-
-    @staticmethod
-    def user_link(objects):
-        return _link_to(objects, 'auth_user_change', objects.user.id, objects.user)
-
-
-class ClanUsersInline(admin.TabularInline):
-    model = GameClanUser
+class ClanMembersInline(admin.TabularInline):
+    model = GameClanMember
     extra = 1
     classes = ('collapse',)
 
-    fields = ('user', 'clan_user_link', 'user_link',)
-    readonly_fields = ('clan_user_link', 'user_link',)
+    fields = ('user', 'clan_member_link', 'user_link',)
+    readonly_fields = ('clan_member_link', 'user_link',)
 
-    def clan_user_link(self, object):
-        return _link_to(object, 'game_gameclanuser_change', object.user.id, object.user)
+    def clan_member_link(self, object):
+        return _link_to(object, ADMIN_URL('clanmember'), object.user.id, object.user)
 
     def user_link(self, object):
-        return _link_to(object, 'auth_user_change', object.user.id, object.user)
+        return _link_to(object, 'myuser_user_change', object.user.id, object.user)
 
 
-class ClanChatInline(admin.TabularInline):
+class ClanChatsInline(admin.TabularInline):
     model = GameClanChat
     extra = 0
     classes = ('collapse',)
 
 
-
-@admin.register(GameClan)
-class GameClanAdmin(admin.ModelAdmin):
-    list_display = ('name', 'game_link', 'created_at',)
-    fieldsets = (
-        ('Clan', {
-            'fields': ('game', 'name', 'description', 'creator', 'max_users',)
-        }),
-    )
-    search_fields = ('name',)
-    list_display_links = ('name',)
-    list_filter = ('game',)
-    inlines = [
-        ClanChatInline,
-        ClanUsersInline,
-    ]
-
-    @staticmethod
-    def game_link(objects):
-        return _link_to(objects, 'game_game_change', objects.game_id, objects.game.game)
-
-
-class MsgInline(admin.TabularInline):
-    model = GameChatMessage
-    extra = 1
+class ChatMessagesABS:
+    extra = 0
     classes = ('collapse',)
     formfield_overrides = {
         models.TextField: {
@@ -101,29 +66,85 @@ class MsgInline(admin.TabularInline):
     }
 
 
-@admin.register(GameClanChat)
-class GameClanChatAdmin(admin.ModelAdmin):
-    list_display = ('__str__', 'clan_link', 'game')
-    inlines = [MsgInline, ]
+class MessagesInline(ChatMessagesABS, admin.TabularInline):
+    model = GameChatTextMessage
+
+
+class ResourceRequestInline(ChatMessagesABS, admin.TabularInline):
+    model = GameChatRequestResource
+
+
+class ItemsRequestInline(ChatMessagesABS, admin.TabularInline):
+    model = GameChatRequestItem
+
+
+@admin.register(Game)
+class GameAdmin(admin.ModelAdmin):
+    list_display = ['game', 'slug']
+
+
+@admin.register(GameClanMember)
+class GameClanMembersAdmin(admin.ModelAdmin):
+    list_display = ['clan_user', 'clan_link', 'user_link', ]
+
+    @staticmethod
+    def clan_user(objects):
+        return objects.user
 
     @staticmethod
     def clan_link(objects):
-        return _link_to(objects, 'game_gameclan_change', objects.clan_id, objects.clan)
+        return _link_to(objects, ADMIN_URL('clan'), objects.clan_id, objects.clan)
+
+    @staticmethod
+    def user_link(objects):
+        return _link_to(objects, 'myuser_user_change', objects.user.id, objects.user)
+
+
+@admin.register(GameClan)
+class GameClanAdmin(admin.ModelAdmin):
+    list_display = ('name', 'game_link', 'created_at',)
+    fieldsets = (
+        ('Clan', {
+            'fields': ('game', 'name', 'description', 'creator', 'max_users',)
+        }),
+    )
+    search_fields = ('name',)
+    list_display_links = ('name',)
+    list_filter = ('game',)
+    inlines = [
+        ClanChatsInline,
+        ClanMembersInline,
+    ]
+
+    @staticmethod
+    def game_link(objects):
+        return _link_to(objects, ADMIN_URL(''), objects.game_id, objects.game.game)
+
+
+@admin.register(GameClanChat)
+class GameClanChatAdmin(admin.ModelAdmin):
+    list_display = ('name', 'clan_link', 'game')
+    inlines = [MessagesInline, ResourceRequestInline, ItemsRequestInline]
+    list_filter = ('clan__game', 'clan',)
+
+    @staticmethod
+    def clan_link(objects):
+        return _link_to(objects, ADMIN_URL('clan'), objects.clan_id, objects.clan)
 
     @staticmethod
     def game(objects):
         return objects.clan.game
 
-
-@admin.register(GameChatMessage)
-class GameChatMessageAdmin(admin.ModelAdmin):
-    list_display = ('type', 'clan_chat', 'clan_user_link', 'msg', 'created_at')
-    list_filter = ('clan_chat', 'clan_chat__clan__game')
-
-    def msg(self, objects):
-        text = objects.text
-        return text[:min(len(text), 20)] + '...'
-
-    @staticmethod
-    def clan_user_link(objects):
-        return _link_to(objects, 'game_gameclanuser_change', objects.user.id, objects.user)
+# @admin.register(GameChatTextMessage)
+# class GameChatMessageAdmin(admin.ModelAdmin):
+#     list_display = ('type', 'clan_chat', 'clan_user_link', 'message', 'created_at')
+#     list_filter = ('clan_chat', 'clan_chat__clan__game')
+#
+#     @staticmethod
+#     def message(objects):
+#         text = objects.text
+#         return text[:min(len(text), 20)] + '...'
+#
+#     @staticmethod
+#     def clan_user_link(objects):
+#         return _link_to(objects, 'game_gameclanmember_change', objects.user.id, objects.user)
