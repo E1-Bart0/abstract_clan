@@ -1,8 +1,9 @@
 from django.db import models
+
 User = 'myuser.User'
 
 
-class ClanMemberABS(models.Model):
+class ClanMemberABC(models.Model):
     """
     Abstract model for Clan User.
     !!! When inherit: clan -> Ref to your Clan model needed with related_name 'members'
@@ -14,9 +15,6 @@ class ClanMemberABS(models.Model):
                                 primary_key=True, related_name='clan_member')
     clan = None
     joined_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        abstract = True
 
     def delete(self, *args, **kwargs):
         """Deleting Clan Model if no users and remove messages"""
@@ -37,8 +35,11 @@ class ClanMemberABS(models.Model):
     def __str__(self):
         return f'Clan member: {self.user.username}'
 
+    class Meta:
+        abstract = True
 
-class ClanChatABS(models.Model):
+
+class ClanChatABC(models.Model):
     """
     Abstract model for Clan Chat.
     !!! When inherit: clan -> Ref to your Clan model needed with related_name 'chat'
@@ -48,14 +49,18 @@ class ClanChatABS(models.Model):
     """
     chat_id = models.AutoField(primary_key=True)
     clan = None
-    name = models.CharField(max_length=30, null=True, unique=True)
+    name = models.CharField(max_length=30, null=True)
 
-    class Meta:
-        abstract = True
-
-    def send(self, user, **kwargs):
-        self._crop_messages()
-        return self.messages.create(user=user, **kwargs)
+    def send(self, user, request_type, **kwargs):
+        response = None
+        if 'message' in request_type:
+            self._crop_messages()
+            response = self.messages.create(user=user, **kwargs)
+        elif 'resource' in request_type:
+            response = self.resource_requests.create(user=user, **kwargs)
+        elif 'item' in request_type:
+            response = self.resource_requests.create(user=user, **kwargs)
+        return response
 
     def _crop_messages(self, max_messages=150):
         messages_count = self.messages.all().count()
@@ -65,8 +70,12 @@ class ClanChatABS(models.Model):
     def __str__(self):
         return f'Clan {self.clan.name} | Chat: {self.name}'
 
+    class Meta:
+        unique_together = (('clan', 'name',),)
+        abstract = True
 
-class ChatMessageABS(models.Model):
+
+class ChatMessageABC(models.Model):
     """
     Abstract model for Chat Messages.
     !!! When inherit: clan_chat -> Ref to your Chat model needed with related_name 'messages'
@@ -81,14 +90,14 @@ class ChatMessageABS(models.Model):
     type = models.CharField(max_length=30)
     text = None
 
-    class Meta:
-        abstract = True
-
     def __str__(self):
         return f'Clan name: {self.clan_chat.clan.name}| Chat: {self.clan_chat.name}'
 
+    class Meta:
+        abstract = True
 
-class ClanABS(models.Model):
+
+class ClanABC(models.Model):
     """
     Abstract model for Clan.
     !!! When inherit: game -> Ref to your Game model.
@@ -96,18 +105,12 @@ class ClanABS(models.Model):
         Example:
         game = models.ForeignKey(Game, on_delete=models.CASCADE)
     """
-    name = models.CharField(max_length=60, unique=True)
+    name = models.CharField(max_length=60)
     description = models.TextField(default=' ')
     creator = models.OneToOneField(User, on_delete=models.DO_NOTHING, related_name='my_clan')
     max_users = models.IntegerField(default=60)
     created_at = models.DateTimeField(auto_now_add=True)
     game = None
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        abstract = True
 
     @property
     def chat(self):
@@ -145,3 +148,9 @@ class ClanABS(models.Model):
         if self.creator == user and self.members.count():
             self.change_creator()
 
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        unique_together = ('game', 'name',)
+        abstract = True

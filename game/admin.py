@@ -23,7 +23,7 @@ BASEDIR = GameConfig.name
 ADMIN_URL = lambda path: BASEDIR + '_' + BASEDIR + path + '_change'
 
 
-def _link_to(objects, admin_name, args, name):
+def _link_to(admin_name, args, name):
     url = reverse(f'admin:{admin_name}', args=[args])
     link = f'<a href={url}>{name}</a>'
     return mark_safe(link)
@@ -38,10 +38,10 @@ class ClanMembersInline(admin.TabularInline):
     readonly_fields = ('clan_member_link', 'user_link',)
 
     def clan_member_link(self, object):
-        return _link_to(object, ADMIN_URL('clanmember'), object.user.id, object.user)
+        return _link_to(ADMIN_URL('clanmember'), object.user.id, object.user)
 
     def user_link(self, object):
-        return _link_to(object, 'myuser_user_change', object.user.id, object.user)
+        return _link_to('myuser_user_change', object.user.id, object.user)
 
 
 class ClanChatsInline(admin.TabularInline):
@@ -50,7 +50,8 @@ class ClanChatsInline(admin.TabularInline):
     classes = ('collapse',)
 
 
-class ChatMessagesABS:
+class MessagesInline(admin.TabularInline):
+    model = GameChatTextMessage
     extra = 0
     classes = ('collapse',)
     formfield_overrides = {
@@ -66,16 +67,16 @@ class ChatMessagesABS:
     }
 
 
-class MessagesInline(ChatMessagesABS, admin.TabularInline):
-    model = GameChatTextMessage
-
-
-class ResourceRequestInline(ChatMessagesABS, admin.TabularInline):
+class ResourceRequestInline(admin.TabularInline):
     model = GameChatRequestResource
+    extra = 0
+    classes = ('collapse',)
 
 
-class ItemsRequestInline(ChatMessagesABS, admin.TabularInline):
+class ItemsRequestInline(admin.TabularInline):
     model = GameChatRequestItem
+    extra = 0
+    classes = ('collapse',)
 
 
 @admin.register(Game)
@@ -85,19 +86,19 @@ class GameAdmin(admin.ModelAdmin):
 
 @admin.register(GameClanMember)
 class GameClanMembersAdmin(admin.ModelAdmin):
-    list_display = ['clan_user', 'clan_link', 'user_link', ]
+    list_display = ['clan_member', 'clan_link', 'user_link', ]
 
     @staticmethod
-    def clan_user(objects):
+    def clan_member(objects):
         return objects.user
 
     @staticmethod
     def clan_link(objects):
-        return _link_to(objects, ADMIN_URL('clan'), objects.clan_id, objects.clan)
+        return _link_to(ADMIN_URL('clan'), objects.clan_id, objects.clan)
 
     @staticmethod
     def user_link(objects):
-        return _link_to(objects, 'myuser_user_change', objects.user.id, objects.user)
+        return _link_to('myuser_user_change', objects.user.id, objects.user)
 
 
 @admin.register(GameClan)
@@ -118,7 +119,7 @@ class GameClanAdmin(admin.ModelAdmin):
 
     @staticmethod
     def game_link(objects):
-        return _link_to(objects, ADMIN_URL(''), objects.game_id, objects.game.game)
+        return _link_to(ADMIN_URL(''), objects.game_id, objects.game.game)
 
 
 @admin.register(GameClanChat)
@@ -129,7 +130,7 @@ class GameClanChatAdmin(admin.ModelAdmin):
 
     @staticmethod
     def clan_link(objects):
-        return _link_to(objects, ADMIN_URL('clan'), objects.clan_id, objects.clan)
+        return _link_to(ADMIN_URL('clan'), objects.clan_id, objects.clan)
 
     @staticmethod
     def game(objects):

@@ -1,8 +1,8 @@
 from rest_framework import serializers
 
-from api_clan.models import ClanABS
+from api_clan.models import ClanABC
 
 
 class ClanSerializer(serializers.Serializer):
     class Meta:
-        model = ClanABS
+        model = ClanABC
