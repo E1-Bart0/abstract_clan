@@ -41,6 +41,9 @@ class GameClanTestCase(TestCase):
         self.user.clan_member.leave()
         self._test_clan_does_not_exist()
 
+    def test_notification__in_add_remove_join_leave(self):
+        pass
+
     def _test_clan_does_not_exist(self):
         with self.assertRaises(GameClan.DoesNotExist):
             self.clan.refresh_from_db()
@@ -57,9 +60,9 @@ class GameClanTestCase(TestCase):
 
         self.assertEqual(new_user, self.clan.creator)
 
-    def test_send_messages(self):
+    def test_send_text_messages(self):
         text = 'TestMessage'
-        msg = self.clan.chat.send(user=self.user, text=text)
+        msg = self.clan.chat.send(user=self.user, request_type='message', text=text)
         msg.refresh_from_db()
 
         self.assertEqual(self.clan.chat.messages.first().text, text)
@@ -68,6 +71,23 @@ class GameClanTestCase(TestCase):
     def test_max_150_messages(self):
         max_count = 150
         create_count = 200
-        [self.clan.chat.send(user=self.user, text=f'TestMsg{i}') for i in range(create_count)]
+        [self.clan.chat.send(user=self.user, text=f'TestMsg{i}', request_type='message') for i in range(create_count)]
         self.assertEqual(max_count, self.clan.chat.messages.count())
         self.assertEqual(self.clan.chat.messages.order_by('created_at').first().text, f'TestMsg{create_count-max_count}')
+
+    def test_send_resource_request(self):
+        msg = self.clan.chat.send(user=self.user, request_type='resource_requests')
+        msg.refresh_from_db()
+        self.assertEqual(1, self.clan.chat.resource_requests.count())
+
+    def test_send_item_request(self):
+        msg = self.clan.chat.send(user=self.user, request_type='item_requests')
+        msg.refresh_from_db()
+        self.assertEqual(1, self.clan.chat.item_requests.count())
+
+    def test_get_all_messages(self):
+        text = 'Test_Message'
+        msg = self.clan.chat.send(user=self.user, request_type='message', text=text)
+        msg = self.clan.chat.send(user=self.user, request_type='resource_requests')
+        msg = self.clan.chat.send(user=self.user, request_type='item_requests')
+        print([msg for msg in self.clan.chat.all_messages.all()])

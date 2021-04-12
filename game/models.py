@@ -1,10 +1,8 @@
 from django.db import models
-from api_clan.models import (
-    ClanABC,
-    ClanMemberABC,
-    ClanChatABC,
-    ChatMessageABC
-)
+from api_clan.models.clan_abc import ClanABC
+from api_clan.models.clan_chat_abc import ClanChatABC
+from api_clan.models.clan_chat_message_abc import ChatMessageABC
+from api_clan.models.clan_member_abc import ClanMemberABC
 from myuser.models import User
 
 
@@ -44,7 +42,15 @@ class GameChatRequestResource(ChatMessageABC):
 
 
 class GameChatRequestItem(ChatMessageABC):
-    clan_chat = models.ForeignKey(GameClanChat, on_delete=models.CASCADE, related_name='items_requests')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='my_items_requests')
+    clan_chat = models.ForeignKey(GameClanChat, on_delete=models.CASCADE, related_name='item_requests')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='my_item_requests')
     type = models.CharField(max_length=30, default='request_item')
     text = models.CharField(default='This is a item request', max_length=20)
+
+
+class GameChatNotification(ChatMessageABC):
+    clan_chat = models.ForeignKey(GameClanChat, on_delete=models.CASCADE, related_name='notifications')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='my_notifications')
+    type = models.CharField(max_length=30, default='notification')
+    text = models.CharField(default='Notification', max_length=20)
+

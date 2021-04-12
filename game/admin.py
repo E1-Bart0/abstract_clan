@@ -14,7 +14,7 @@ from .models import (
     GameClanChat,
     GameChatTextMessage,
     GameChatRequestItem,
-    GameChatRequestResource,
+    GameChatRequestResource, GameChatNotification,
 )
 
 admin.site.register(User, UserAdmin)
@@ -79,6 +79,12 @@ class ItemsRequestInline(admin.TabularInline):
     classes = ('collapse',)
 
 
+class NotificationsInline(admin.TabularInline):
+    model = GameChatNotification
+    extra = 0
+    classes = ('collapse',)
+
+
 @admin.register(Game)
 class GameAdmin(admin.ModelAdmin):
     list_display = ['game', 'slug']
@@ -125,7 +131,12 @@ class GameClanAdmin(admin.ModelAdmin):
 @admin.register(GameClanChat)
 class GameClanChatAdmin(admin.ModelAdmin):
     list_display = ('name', 'clan_link', 'game')
-    inlines = [MessagesInline, ResourceRequestInline, ItemsRequestInline]
+    inlines = [
+        MessagesInline,
+        ResourceRequestInline,
+        ItemsRequestInline,
+        NotificationsInline,
+    ]
     list_filter = ('clan__game', 'clan',)
 
     @staticmethod
