@@ -49,7 +49,6 @@ class GameClanTestCase(TestCase):
         self.clan.remove(user=new_user2)
         new_user1.clan_member.leave()
 
-        print([msg.text for msg in self.clan.chat.notifications.all()])
         self.assertEqual(5, self.clan.chat.notifications.count())
 
     def _test_clan_does_not_exist(self):
@@ -93,9 +92,9 @@ class GameClanTestCase(TestCase):
         msg.refresh_from_db()
         self.assertEqual(1, self.clan.chat.item_requests.count())
 
-    # def test_get_all_messages(self):
-    #     text = 'Test_Message'
-    #     msg = self.clan.chat.send(user=self.user, request_type='message', text=text)
-    #     msg = self.clan.chat.send(user=self.user, request_type='resource_requests')
-    #     msg = self.clan.chat.send(user=self.user, request_type='item_requests')
-    #     print([msg for msg in self.clan.chat.all_messages.all()])
+    def test_get_all_messages(self):
+        text = 'Test_Message'
+        msg = self.clan.chat.send(user=self.user, request_type='message', text=text)
+        msg = self.clan.chat.send(user=self.user, request_type='resource_requests')
+        msg = self.clan.chat.send(user=self.user, request_type='item_requests')
+        self.assertEqual(4, len(self.clan.chat.all_messages))

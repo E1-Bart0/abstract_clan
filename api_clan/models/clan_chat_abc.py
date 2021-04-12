@@ -1,3 +1,5 @@
+from itertools import chain
+
 from django.db import models
 
 
@@ -34,8 +36,10 @@ class ClanChatABC(models.Model):
         text_messages = self.messages.all()
         resource_request = self.resource_requests.all()
         item_requests = self.item_requests.all()
-        messages = (text_messages + resource_request + item_requests)
-        return messages
+        notifications = self.notifications.all()
+        all_messages = chain(text_messages, resource_request, item_requests, notifications)
+        return sorted(all_messages, key=lambda msg: msg.created_at)
+        # messages = (text_messages & resource_request & item_requests)
 
     def send(self, user, request_type, **kwargs):
         model = {
