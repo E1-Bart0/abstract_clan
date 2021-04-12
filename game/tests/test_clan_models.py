@@ -12,10 +12,11 @@ class GameClanTestCase(TestCase):
         self.user = User.objects.create_user(username='Test', password='bla4321')
         self.clan = GameClan.create(creator=self.user, name='TestClan', game=self.game)
 
-    def test_creation_clan(self):
+    def test_creation_clan__and_chat(self):
         self.clan.refresh_from_db()
         self.assertEqual(self.clan.creator, self.user)
         self.assertEqual(self.clan.creator.clan_member.clan, self.clan)
+        self.assertTrue(self.clan.chat)
 
         with self.assertRaises(django.db.utils.IntegrityError):
             clan = GameClan.create(creator=self.user, name='Test')
@@ -42,7 +43,14 @@ class GameClanTestCase(TestCase):
         self._test_clan_does_not_exist()
 
     def test_notification__in_add_remove_join_leave(self):
-        pass
+        new_user1, new_user2 = self._add_n_users(2)
+        self.clan.add(new_user1)
+        GameClanMember.join(user=new_user2, clan=self.clan)
+        self.clan.remove(user=new_user2)
+        new_user1.clan_member.leave()
+
+        print([msg.text for msg in self.clan.chat.notifications.all()])
+        self.assertEqual(5, self.clan.chat.notifications.count())
 
     def _test_clan_does_not_exist(self):
         with self.assertRaises(GameClan.DoesNotExist):
@@ -85,9 +93,9 @@ class GameClanTestCase(TestCase):
         msg.refresh_from_db()
         self.assertEqual(1, self.clan.chat.item_requests.count())
 
-    def test_get_all_messages(self):
-        text = 'Test_Message'
-        msg = self.clan.chat.send(user=self.user, request_type='message', text=text)
-        msg = self.clan.chat.send(user=self.user, request_type='resource_requests')
-        msg = self.clan.chat.send(user=self.user, request_type='item_requests')
-        print([msg for msg in self.clan.chat.all_messages.all()])
+    # def test_get_all_messages(self):
+    #     text = 'Test_Message'
+    #     msg = self.clan.chat.send(user=self.user, request_type='message', text=text)
+    #     msg = self.clan.chat.send(user=self.user, request_type='resource_requests')
+    #     msg = self.clan.chat.send(user=self.user, request_type='item_requests')
+    #     print([msg for msg in self.clan.chat.all_messages.all()])

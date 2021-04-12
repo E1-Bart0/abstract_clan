@@ -14,6 +14,22 @@ class ClanChatABC(models.Model):
     name = models.CharField(max_length=30, null=True)
 
     @property
+    def messages(self):
+        return self.messages
+
+    @property
+    def resource_requests(self):
+        return self.resource_requests
+
+    @property
+    def item_requests(self):
+        return self.item_requests
+
+    @property
+    def notifications(self):
+        return self.notifications
+
+    @property
     def all_messages(self):
         text_messages = self.messages.all()
         resource_request = self.resource_requests.all()

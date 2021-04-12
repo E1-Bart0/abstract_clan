@@ -19,25 +19,33 @@ class ClanABC(models.Model):
     game = None
 
     @property
+    def chats(self):
+        return self.chats
+
+    @property
+    def members(self):
+        return self.members
+
+    @property
     def chat(self):
         return self.chats.first()
 
     @classmethod
     def create(cls, *args, **kwargs):
         """
-        Creating ClanUser(), ClanChat with Clan creation
+        Creating ClanMember, ClanChat with Clan creation
         """
         clan = cls(*args, **kwargs)
         clan.save()
-        clan.add(user=kwargs['creator'])
         try:
             clan.chats.create(clan=clan, name=clan.name)
         except AttributeError:
             pass
+        clan.add(user=kwargs['creator'])
         return clan
 
     def change_creator(self):
-        """Changing Clan creator to oldest user"""
+        """Changing Clan creator to the oldest clan member"""
         clan_member = self.members.order_by('joined_at').first()
         self.creator = clan_member.user
         self.save(update_fields=['creator'])

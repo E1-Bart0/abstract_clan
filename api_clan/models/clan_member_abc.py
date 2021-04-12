@@ -28,12 +28,17 @@ class ClanMemberABC(models.Model):
             self.clan.delete()
         return super().delete(*args, **kwargs)
 
+    def save(self, *args, **kwargs):
+        """Saving Clan Model. Sending notification about leaving"""
+        try:
+            text_on_join = f'{self.user.username} Joined clan'
+            self.clan.chat.send(user=self.user, request_type='notification', text=text_on_join)
+        except AttributeError:
+            pass
+        return super().save(*args, **kwargs)
+
     @classmethod
     def create(cls, **kwargs):
-        """Saving Clan Model. Sending notification about leaving"""
-        print('tyt')
-        text_on_join = f'{cls.user.username} Joined clan'
-        cls.clan.chat.send(user=cls.user, request_type='notification', text=text_on_join)
         return super().save()
 
     @classmethod
