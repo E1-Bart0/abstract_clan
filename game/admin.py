@@ -109,10 +109,10 @@ class GameClanMembersAdmin(admin.ModelAdmin):
 
 @admin.register(GameClan)
 class GameClanAdmin(admin.ModelAdmin):
-    list_display = ('name', 'game_link', 'created_at',)
+    list_display = ('name', 'game_link', 'created_at', 'creator')
     fieldsets = (
         ('Clan', {
-            'fields': ('game', 'name', 'description', 'creator', 'max_users',)
+            'fields': ('game', 'name', 'description', 'creator', 'max_members',)
         }),
     )
     search_fields = ('name',)

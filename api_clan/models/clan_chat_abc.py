@@ -37,9 +37,8 @@ class ClanChatABC(models.Model):
         resource_request = self.resource_requests.all()
         item_requests = self.item_requests.all()
         notifications = self.notifications.all()
-        all_messages = chain(text_messages, resource_request, item_requests, notifications)
-        return sorted(all_messages, key=lambda msg: msg.created_at)
-        # messages = (text_messages & resource_request & item_requests)
+        all_msgs = text_messages.union(resource_request, item_requests, notifications)
+        return all_msgs
 
     def send(self, user, request_type, **kwargs):
         model = {
@@ -55,9 +54,10 @@ class ClanChatABC(models.Model):
     @staticmethod
     def _crop(model, max_count=150):
         """Delete messages if they amount more than max_messages"""
-        messages_count = model.all().count()
+        messages = model.all().order_by('created_at')
+        messages_count = len(messages)
         if messages_count >= max_count:
-            [msg.delete() for msg in model.order_by('created_at')[:messages_count - max_count + 1]]
+            [msg.delete_model() for msg in messages[:messages_count - max_count + 1]]
 
     def __str__(self):
         return f'Clan {self.clan.name} | Chat: {self.name}'

@@ -19,22 +19,18 @@ class ClanMemberABC(models.Model):
     def delete(self, *args, **kwargs):
         """Deleting Clan Model
          Sending notification about leaving"""
-        try:
+        if hasattr(self.clan, 'chats'):
             text_on_join = f'{self.user.username} Leaving Clan'
             self.clan.chat.send(user=self.user, request_type='notification', text=text_on_join)
-        except AttributeError:
-            pass
         if self.clan.members.count() == 1:
-            self.clan.delete()
+            self.clan.delete_model()
         return super().delete(*args, **kwargs)
 
     def save(self, *args, **kwargs):
         """Saving Clan Model. Sending notification about leaving"""
-        try:
+        if hasattr(self.clan, 'chats'):
             text_on_join = f'{self.user.username} Joined clan'
             self.clan.chat.send(user=self.user, request_type='notification', text=text_on_join)
-        except AttributeError:
-            pass
         return super().save(*args, **kwargs)
 
     @classmethod
