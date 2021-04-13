@@ -18,9 +18,12 @@ from .views import clan_views
 
 urlpatterns = [
     path('clans_all/', clan_views.ClanListView.as_view(), name='clans'),
-    path(r'clan/', clan_views.ClanView.as_view(), name='clan'),
+    path('clan/', clan_views.ClanView.as_view(), name='clan'),
 
     path('clan/actions/create/', clan_views.CreateClanView.as_view(), name='clan-create'),
     path('clan/actions/update/', clan_views.UpdateClanView.as_view(), name='clan-update'),
-    path('clan/actions/delete/', clan_views.DeleteClanView.as_view(), name='clan-update'),
+    path('clan/actions/delete/', clan_views.DeleteClanView.as_view(), name='clan-delete'),
+    path('clan/actions/add_member/', clan_views.AddClanMemberView.as_view(), name='clan-add-member'),
+    path('clan/actions/remove_member/', clan_views.RemoveClanMemberView.as_view(), name='clan-remove-member'),
+
 ]

@@ -56,7 +56,7 @@ class ClanABC(models.Model):
     def remove(self, user):
         """Deleting ClanUser. If user is admin checking others users and if no more admins in clan,
             making oldest user admin"""
-        user.clan_member.delete_model()
+        user.clan_member.delete()
         if self.creator == user and self.members.count():
             self.change_creator()
 

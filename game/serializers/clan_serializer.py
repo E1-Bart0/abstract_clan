@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from game.models import GameClan, GameClanMember, GameClanChat
+from game.models import GameClan, GameClanMember, GameClanChat, Game
 from myuser.models import User
 
 
@@ -10,24 +10,37 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['username', 'email']
 
 
-class ClanListSerializer(serializers.ModelSerializer):
-    creator = UserSerializer('creator', read_only=True)
+class ClanSerializer(serializers.ModelSerializer):
+    creator = UserSerializer(many=False, required=False, read_only=True)
+    members_count = serializers.SerializerMethodField('get_members_count')
+    id = serializers.PrimaryKeyRelatedField(required=True, queryset=GameClan.objects.all())
+
+    @staticmethod
+    def get_members_count(clan):
+        return clan.members.count()
+
+    @staticmethod
+    def add_to_resource_data(data, resource_data):
+        for key in data:
+            resource_data[key] = data[key][0] if len(data[key]) == 1 else data[key]
+
+
+class ClanListSerializer(ClanSerializer):
     game = serializers.SlugRelatedField(many=False, read_only=True, slug_field='game')
 
     class Meta:
         model = GameClan
-        fields = ['id', 'name', 'description', 'max_members', 'game', 'creator', 'created_at']
+        fields = ['id', 'name', 'description', 'max_members', 'game', 'creator', 'created_at', 'members_count']
 
 
-class ClanDetailUpdateSerializer(serializers.ModelSerializer):
-    id = serializers.PrimaryKeyRelatedField(required=True, queryset=GameClan.objects.all())
-    creator = UserSerializer(many=False, required=False, read_only=True)
-    name = serializers.CharField(read_only=True)
-
+class ClanDetailView(ClanSerializer):
     class Meta:
         model = GameClan
         depth = 1
-        fields = ['name', 'description', 'max_members', 'game', 'creator', 'created_at', 'chats', 'id']
+        fields = ['id', 'name', 'description', 'max_members', 'game', 'creator', 'created_at', 'chats', 'members_count']
+
+
+class ClanUpdateSerializer(ClanSerializer):
 
     def to_internal_value(self, data):
         user = self.context.user
@@ -37,27 +50,46 @@ class ClanDetailUpdateSerializer(serializers.ModelSerializer):
         resource_data = {
             'id': clan_id,
         }
-        for key in data:
-            resource_data[key] = data[key][0] if len(data[key]) == 1 else data[key]
+        self.add_to_resource_data(data, resource_data)
         return super().to_internal_value(resource_data)
 
+    def validate_id(self, clan):
+        if clan.creator == self.context.user:
+            return clan
+        raise serializers.ValidationError(f'Only creator "{clan.creator}" could made change')
+
     def save(self, **kwargs):
-        clan = self.validated_data['id']
-        for attr, value in self.validated_data.items():
-            if attr != 'id':
-                setattr(clan, attr, value)
-        clan.save()
-        return clan
+        try:
+            clan = self.validated_data['id']
+            for attr, value in self.validated_data.items():
+                if attr != 'id':
+                    setattr(clan, attr, value)
+            clan.save()
+            return clan
+        except Exception as err:
+            raise serializers.ValidationError(err)
+
+    class Meta:
+        model = GameClan
+        depth = 1
+        fields = ['id', 'name', 'description', 'max_members', 'creator', 'created_at', 'chats']
+
+
+class ClanDeleteSerializer(ClanUpdateSerializer):
 
     def delete_model(self):
         clan = self.validated_data['id']
         return clan.delete()
 
-class ClanCreateSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = GameClan
-        fields = ['name', 'description', 'creator', 'game', 'max_members']
+        depth = 1
+        fields = ['id']
+
+
+class ClanCreateSerializer(ClanSerializer):
+    creator = None
+    game = serializers.PrimaryKeyRelatedField(queryset=Game.objects.all(), required=True)
 
     def to_internal_value(self, data):
         user = self.context.user
@@ -65,31 +97,30 @@ class ClanCreateSerializer(serializers.ModelSerializer):
             'creator': user.id,
             'game': user.game.id if hasattr(user, 'game') else None,
         }
-        for key in data:
-            resource_data[key] = data[key][0] if len(data[key]) == 1 else data[key]
+        self.add_to_resource_data(data, resource_data)
         return super().to_internal_value(resource_data)
 
-
-
-
-
-
-
-
-class ClanUsersListSerializer(serializers.ModelSerializer):
-    user = UserSerializer('user')
+    def save(self, **kwargs):
+        return self.Meta.model.create(**self.validated_data)
 
     class Meta:
-        model = GameClanMember
-        depth = 2
-        fields = ['user', 'joined_at', 'clan']
+        model = GameClan
+        fields = ['name', 'description', 'creator', 'game', 'max_members']
 
 
-class ClanChatSerializer(serializers.ModelSerializer):
-    user_serializer = ClanUsersListSerializer
-    user_serializer.Meta.fields = ['user', ]
+class AddClanMemberSerializer(ClanSerializer):
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=True)
 
     class Meta:
-        model = GameClanChat
-        depth = 1
-        fields = ['clan', 'name']
+        model = GameClan
+        fields = ['id', 'user']
+
+    def validate_user(self, user):
+        if hasattr(user, 'clan_member') or hasattr(user, 'my_clan'):
+            raise serializers.ValidationError(f'"{user}" already in clan "{user.my_clan}"')
+        return user
+
+    def add_member(self):
+        clan = self.validated_data.get('id')
+        user = self.validated_data.get('user')
+        clan.add(user)

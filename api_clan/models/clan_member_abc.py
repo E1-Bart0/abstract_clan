@@ -23,7 +23,7 @@ class ClanMemberABC(models.Model):
             text_on_join = f'{self.user.username} Leaving Clan'
             self.clan.chat.send(user=self.user, request_type='notification', text=text_on_join)
         if self.clan.members.count() == 1:
-            self.clan.delete_model()
+            self.clan.delete()
         return super().delete(*args, **kwargs)
 
     def save(self, *args, **kwargs):

@@ -57,7 +57,7 @@ class ClanChatABC(models.Model):
         messages = model.all().order_by('created_at')
         messages_count = len(messages)
         if messages_count >= max_count:
-            [msg.delete_model() for msg in messages[:messages_count - max_count + 1]]
+            [msg.delete() for msg in messages[:messages_count - max_count + 1]]
 
     def __str__(self):
         return f'Clan {self.clan.name} | Chat: {self.name}'
