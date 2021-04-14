@@ -14,16 +14,18 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import path
-from .views import clan_views
+from .views import clan_views, clan_members_view
 
 urlpatterns = [
-    path('clans_all/', clan_views.ClanListView.as_view(), name='clans'),
-    path('clan/', clan_views.ClanView.as_view(), name='clan'),
+    path('clans', clan_views.ClanListView.as_view(), name='clans'),
+    path('clan', clan_views.ClanView.as_view(), name='clan'),
 
-    path('clan/actions/create/', clan_views.CreateClanView.as_view(), name='clan-create'),
-    path('clan/actions/update/', clan_views.UpdateClanView.as_view(), name='clan-update'),
-    path('clan/actions/delete/', clan_views.DeleteClanView.as_view(), name='clan-delete'),
-    path('clan/actions/add_member/', clan_views.AddClanMemberView.as_view(), name='clan-add-member'),
-    path('clan/actions/remove_member/', clan_views.RemoveClanMemberView.as_view(), name='clan-remove-member'),
+    path('clan/create', clan_views.CreateClanView.as_view(), name='clan-create'),
+    path('clan/update', clan_views.UpdateClanView.as_view(), name='clan-update'),
+    path('clan/delete', clan_views.DeleteClanView.as_view(), name='clan-delete'),
+    path('clan/add_member', clan_views.AddClanMemberView.as_view(), name='clan-add-member'),
+    path('clan/remove_member', clan_views.RemoveClanMemberView.as_view(), name='clan-remove-member'),
+
+    path('clan/members', clan_members_view.ClanMembersListView.as_view(), name='clan-members'),
 
 ]

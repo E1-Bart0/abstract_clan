@@ -17,6 +17,7 @@ class ClanSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_members_count(clan):
+        clan = clan if isinstance(clan, GameClan) else clan.get('id')
         return clan.members.count()
 
     @staticmethod
@@ -26,27 +27,24 @@ class ClanSerializer(serializers.ModelSerializer):
 
 
 class ClanListSerializer(ClanSerializer):
-    game = serializers.SlugRelatedField(many=False, read_only=True, slug_field='game')
 
     class Meta:
         model = GameClan
-        fields = ['id', 'name', 'description', 'max_members', 'game', 'creator', 'created_at', 'members_count']
+        fields = ['id', 'name', 'description', 'max_members', 'creator', 'created_at', 'members_count']
 
 
 class ClanDetailView(ClanSerializer):
     class Meta:
         model = GameClan
         depth = 1
-        fields = ['id', 'name', 'description', 'max_members', 'game', 'creator', 'created_at', 'chats', 'members_count']
+        fields = ['id', 'name', 'description', 'max_members', 'creator', 'created_at', 'chats', 'members_count']
 
 
 class ClanUpdateSerializer(ClanSerializer):
 
     def to_internal_value(self, data):
         user = self.context.user
-        clan_id = self.context.GET.get('id')
-        if not clan_id and hasattr(user, 'my_clan'):
-            clan_id = user.my_clan.id
+        clan_id = user.my_clan.id if hasattr(user, 'my_clan') else None
         resource_data = {
             'id': clan_id,
         }
