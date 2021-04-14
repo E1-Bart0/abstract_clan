@@ -1,3 +1,4 @@
+from django.http import QueryDict
 from rest_framework import serializers
 
 from game.models import GameClan, Game
@@ -16,14 +17,15 @@ class ClanSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(required=True, queryset=GameClan.objects.all())
 
     @staticmethod
-    def get_members_count(clan):
+    def get_members_count(clan) -> int:
         clan = clan if isinstance(clan, GameClan) else clan.get('id')
         return clan.members.count()
 
     @staticmethod
-    def add_to_resource_data(data, resource_data):
+    def add_to_resource_data(data: QueryDict, resource_data: dict) -> dict:
         for key in data:
             resource_data[key] = data[key][0] if len(data[key]) == 1 else data[key]
+        return resource_data
 
 
 class ClanListSerializer(ClanSerializer):
@@ -116,7 +118,7 @@ class AddClanMemberSerializer(ClanSerializer):
     @staticmethod
     def validate_user(user):
         if hasattr(user, 'clan_member') or hasattr(user, 'my_clan'):
-            raise serializers.ValidationError(f'"{user}" already in clan "{user.my_clan}"')
+            raise serializers.ValidationError(f'"{user}" already in clan "{user.clan_member.clan.name}"')
         return user
 
     def add_member(self):

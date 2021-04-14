@@ -24,14 +24,18 @@ class ClanView(APIView):
     model = serializer_class.Meta.model
 
     def get(self, request):
-        clan_id = self.request.GET.get('id')
-        if not clan_id:
-            if hasattr(self.request.user, 'my_clan'):
-                clan_id = self.request.user.my_clan.id
+        clan_id = self.get_clan_id(request)
         clan = self.model.objects.filter(id=clan_id)
         if clan.exists():
             return Response(self.serializer_class(clan.first()).data, status=status.HTTP_200_OK)
         return Response({'Error': f'Clan with such id "{clan_id}" does not exist '}, status.HTTP_404_NOT_FOUND)
+
+    @staticmethod
+    def get_clan_id(request):
+        clan_id = request.GET.get('id')
+        if not clan_id and hasattr(request.user, 'my_clan'):
+            clan_id = request.user.my_clan.id
+        return clan_id
 
 
 class CreateClanView(CreateAPIView):
@@ -72,19 +76,25 @@ class AddClanMemberView(APIView):
     model = serializer_class.Meta.model
 
     def post(self, request):
-        data = {
-            'id': request.GET.get('id'),
-            'user': request.user.id
-        }
+        data = self.get_data_from(request)
         serializer = self.serializer_class(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.add_member()
         return Response({'OK': f'User was joined the clan'})
 
+    @staticmethod
+    def get_data_from(request):
+        data = {
+            'id': request.GET.get('id') or request.GET.get('clan_id'),
+            'user': request.user.id
+        }
+        return data
+
 
 class RemoveClanMemberView(APIView):
 
-    def post(self, request):
+    @staticmethod
+    def post(request):
         user = request.user
         if hasattr(user, 'clan_member'):
             clan = user.clan_member.clan

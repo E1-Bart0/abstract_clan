@@ -27,5 +27,9 @@ urlpatterns = [
     path('clan/remove_member', clan_views.RemoveClanMemberView.as_view(), name='clan-remove-member'),
 
     path('clan/members', clan_members_view.ClanMembersListView.as_view(), name='clan-members'),
+    path('clan/member', clan_members_view.ClanMemberView.as_view(), name='clan-member'),
+    path('clan/member/join', clan_members_view.ClanMemberJoinView.as_view(), name='clan-member-join'),
+    path('clan/member/leave', clan_members_view.ClanMemberLeaveView.as_view(), name='clan-member-leave'),
+
 
 ]

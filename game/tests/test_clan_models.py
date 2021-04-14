@@ -13,6 +13,7 @@ class GameClanTestCase(TestCase):
         self.clan = GameClan.create(creator=self.user, name='TestClan', game=self.game)
 
     def test_creation_clan__and_chat(self):
+        """TEST MODEL GameClan OK: Creating GameChat, GameClanMember while creating GameClan"""
         self.clan.refresh_from_db()
         self.assertEqual(self.clan.creator, self.user)
         self.assertEqual(self.clan.creator.clan_member.clan, self.clan)
@@ -22,7 +23,8 @@ class GameClanTestCase(TestCase):
             clan = GameClan.create(creator=self.user, name='Test')
 
     def test_add__remove(self):
-        new_user = self._add_n_users(1)[0]
+        """TEST MODEL GameClan OK: Adding and Removing user to clan"""
+        new_user = self._create_n_users(1)[0]
         self.clan.add(new_user)
         self.assertEqual([self.user, new_user], [clan_member.user for clan_member in self.clan.members.all()])
 
@@ -32,7 +34,8 @@ class GameClanTestCase(TestCase):
         self._test_clan_does_not_exist()
 
     def test_join__leave(self):
-        new_user = self._add_n_users(1)[0]
+        """TEST MODEL GameClanMember OK: Joining and Leaving user to clan"""
+        new_user = self._create_n_users(1)[0]
         GameClanMember.join(user=new_user, clan=self.clan)
         self.assertEqual([self.user, new_user], [clan_member.user for clan_member in self.clan.members.all()])
 
@@ -43,7 +46,8 @@ class GameClanTestCase(TestCase):
         self._test_clan_does_not_exist()
 
     def test_notification__in_add_remove_join_leave(self):
-        new_user1, new_user2 = self._add_n_users(2)
+        """TEST MODEL GameClanChat OK: Sending notification about leaving and joining clan_member"""
+        new_user1, new_user2 = self._create_n_users(2)
         self.clan.add(new_user1)
         GameClanMember.join(user=new_user2, clan=self.clan)
         self.clan.remove(user=new_user2)
@@ -56,11 +60,13 @@ class GameClanTestCase(TestCase):
             self.clan.refresh_from_db()
 
     @staticmethod
-    def _add_n_users(n):
+    def _create_n_users(n):
         return [User.objects.create_user(username=f'Test{user}', password='bla4321') for user in range(n)]
 
     def test_next_creator_when_leaving(self):
-        new_user = self._add_n_users(1)[0]
+        """TEST MODEL GameClan OK: Switching Clan creator to oldest clan_member
+            if creator leaving"""
+        new_user = self._create_n_users(1)[0]
         self.clan.add(new_user)
         self.clan.remove(self.user)
         self.clan.refresh_from_db()
@@ -68,6 +74,7 @@ class GameClanTestCase(TestCase):
         self.assertEqual(new_user, self.clan.creator)
 
     def test_send_text_messages(self):
+        """TEST MODEL GameChat OK: Sending Text Message"""
         text = 'TestMessage'
         msg = self.clan.chat.send(user=self.user, request_type='message', text=text)
         msg.refresh_from_db()
@@ -76,6 +83,7 @@ class GameClanTestCase(TestCase):
         self.assertEqual(self.user.my_messages.first().text, text)
 
     def test_max_150_messages(self):
+        """TEST MODEL GameChat OK: Crop messages if Messages count > 150"""
         max_count = 150
         create_count = 200
         [self.clan.chat.send(user=self.user, text=f'TestMsg{i}', request_type='message') for i in range(create_count)]
@@ -83,16 +91,19 @@ class GameClanTestCase(TestCase):
         self.assertEqual(self.clan.chat.messages.order_by('created_at').first().text, f'TestMsg{create_count-max_count}')
 
     def test_send_resource_request(self):
+        """TEST MODEL GameChat OK: Sending Resource Request"""
         msg = self.clan.chat.send(user=self.user, request_type='resource_requests')
         msg.refresh_from_db()
         self.assertEqual(1, self.clan.chat.resource_requests.count())
 
     def test_send_item_request(self):
+        """TEST MODEL GameChat OK: Sending Item Request"""
         msg = self.clan.chat.send(user=self.user, request_type='item_requests')
         msg.refresh_from_db()
         self.assertEqual(1, self.clan.chat.item_requests.count())
 
     def test_get_all_messages(self):
+        """TEST MODEL GameChat OK: Get chat.all_messages queryset"""
         text = 'Test_Message'
         msg = self.clan.chat.send(user=self.user, request_type='message', text=text)
         msg = self.clan.chat.send(user=self.user, request_type='resource_requests')

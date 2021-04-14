@@ -9,7 +9,7 @@ class ClanMemberSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GameClanMember
-        fields = ['user', 'joined_at']
+        fields = ['user_id', 'user', 'joined_at']
 
 
 class ClanMembersListSerializer(ClanSerializer):
@@ -18,4 +18,4 @@ class ClanMembersListSerializer(ClanSerializer):
 
     class Meta:
         model = GameClan
-        fields = ['id', 'name', 'created_at', 'members_count','all_members']
+        fields = ['id', 'name', 'created_at', 'members_count', 'all_members']
