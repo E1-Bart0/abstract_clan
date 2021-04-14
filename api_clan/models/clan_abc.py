@@ -43,8 +43,11 @@ class ClanABC(models.Model):
         return clan
 
     def change_creator(self):
-        """Changing Clan creator to the oldest clan member"""
+        """Changing Clan creator to the oldest clan member. Sending notifications about it"""
         clan_member = self.members.order_by('joined_at').first()
+        if hasattr(self, 'chats'):
+            text_on_switch_creator = f'Creator left, switching creator to {clan_member.user}'
+            self.chat.send(user=clan_member.user, request_type='notification', text=text_on_switch_creator)
         self.creator = clan_member.user
         self.save(update_fields=['creator'])
 
