@@ -3,7 +3,14 @@ from rest_framework.generics import *
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from game.serializers.clan_serializer import *
+from game.serializers.clan_serializer import (
+    ClanListSerializer,
+    ClanDetailView,
+    ClanCreateSerializer,
+    ClanUpdateSerializer,
+    ClanDeleteSerializer,
+    AddClanMemberSerializer,
+)
 
 
 class ClanListView(ListAPIView):
@@ -76,8 +83,6 @@ class AddClanMemberView(APIView):
 
 
 class RemoveClanMemberView(APIView):
-    serializer_class = AddClanMemberSerializer
-    model = serializer_class.Meta.model
 
     def post(self, request):
         user = request.user

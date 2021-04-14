@@ -3,7 +3,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from game.models import GameClan, GameClanMember, Game
+from game.models import GameClan, Game
 from myuser.models import User
 
 

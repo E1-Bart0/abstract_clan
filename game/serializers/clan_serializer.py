@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from game.models import GameClan, GameClanMember, GameClanChat, Game
+from game.models import GameClan, Game
 from myuser.models import User
 
 
@@ -115,7 +115,8 @@ class AddClanMemberSerializer(ClanSerializer):
         model = GameClan
         fields = ['id', 'user']
 
-    def validate_user(self, user):
+    @staticmethod
+    def validate_user(user):
         if hasattr(user, 'clan_member') or hasattr(user, 'my_clan'):
             raise serializers.ValidationError(f'"{user}" already in clan "{user.my_clan}"')
         return user
