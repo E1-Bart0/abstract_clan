@@ -92,20 +92,20 @@ class GameClanTestCase(TestCase):
 
     def test_send_resource_request(self):
         """TEST MODEL GameChat OK: Sending Resource Request"""
-        msg = self.clan.chat.send(user=self.user, request_type='resource_requests')
+        msg = self.clan.chat.send(user=self.user, request_type='requests_resource')
         msg.refresh_from_db()
-        self.assertEqual(1, self.clan.chat.resource_requests.count())
+        self.assertEqual(1, self.clan.chat.requests_resource.count())
 
     def test_send_item_request(self):
         """TEST MODEL GameChat OK: Sending Item Request"""
-        msg = self.clan.chat.send(user=self.user, request_type='item_requests')
+        msg = self.clan.chat.send(user=self.user, request_type='requests_item')
         msg.refresh_from_db()
-        self.assertEqual(1, self.clan.chat.item_requests.count())
+        self.assertEqual(1, self.clan.chat.requests_item.count())
 
     def test_get_all_messages(self):
         """TEST MODEL GameChat OK: Get chat.all_messages queryset"""
         text = 'Test_Message'
         msg = self.clan.chat.send(user=self.user, request_type='message', text=text)
-        msg = self.clan.chat.send(user=self.user, request_type='resource_requests')
-        msg = self.clan.chat.send(user=self.user, request_type='item_requests')
+        msg = self.clan.chat.send(user=self.user, request_type='requests_resource')
+        msg = self.clan.chat.send(user=self.user, request_type='requests_item')
         self.assertEqual(4, len(self.clan.chat.all_messages))

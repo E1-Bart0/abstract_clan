@@ -35,15 +35,15 @@ class GameChatTextMessage(ChatMessageABC):
 
 
 class GameChatRequestResource(ChatMessageABC):
-    clan_chat = models.ForeignKey(GameClanChat, on_delete=models.CASCADE, related_name='resource_requests')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='my_resource_requests')
+    clan_chat = models.ForeignKey(GameClanChat, on_delete=models.CASCADE, related_name='requests_resource')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='my_requests_resources')
     type = models.CharField(max_length=30, default='resource_request')
     text = models.CharField(default='This is a resource request', max_length=20)
 
 
 class GameChatRequestItem(ChatMessageABC):
-    clan_chat = models.ForeignKey(GameClanChat, on_delete=models.CASCADE, related_name='item_requests')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='my_item_requests')
+    clan_chat = models.ForeignKey(GameClanChat, on_delete=models.CASCADE, related_name='requests_item')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='my_requests_item')
     type = models.CharField(max_length=30, default='request_item')
     text = models.CharField(default='This is a item request', max_length=20)
 

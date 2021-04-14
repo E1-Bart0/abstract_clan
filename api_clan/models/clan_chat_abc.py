@@ -20,12 +20,12 @@ class ClanChatABC(models.Model):
         return self.messages
 
     @property
-    def resource_requests(self):
-        return self.resource_requests
+    def requests_resource(self):
+        return self.requests_resource
 
     @property
-    def item_requests(self):
-        return self.item_requests
+    def requests_item(self):
+        return self.requests_item
 
     @property
     def notifications(self):
@@ -34,17 +34,17 @@ class ClanChatABC(models.Model):
     @property
     def all_messages(self):
         text_messages = self.messages.all()
-        resource_request = self.resource_requests.all()
-        item_requests = self.item_requests.all()
+        resource_request = self.requests_resource.all()
+        requests_item = self.requests_item.all()
         notifications = self.notifications.all()
-        all_msgs = text_messages.union(resource_request, item_requests, notifications)
+        all_msgs = text_messages.union(resource_request, requests_item, notifications)
         return all_msgs
 
     def send(self, user, request_type, **kwargs):
         model = {
             'message': self.messages,
-            'resource_requests': self.resource_requests,
-            'item_requests': self.item_requests,
+            'requests_resource': self.requests_resource,
+            'requests_item': self.requests_item,
             'notification': self.notifications,
         }
         self._crop(model[request_type])
