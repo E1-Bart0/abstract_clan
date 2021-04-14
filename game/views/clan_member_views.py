@@ -2,7 +2,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from game.serializers.clan_members_serializer import ClanMembersListSerializer, ClanMemberSerializer
+from game.serializers.clan_members_serializers import ClanMembersListSerializer, ClanMemberSerializer
 from game.views.clan_views import AddClanMemberView, RemoveClanMemberView
 
 

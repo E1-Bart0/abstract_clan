@@ -3,7 +3,7 @@ from rest_framework.generics import ListAPIView, CreateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from game.serializers.clan_serializer import (
+from game.serializers.clan_serializers import (
     ClanListSerializer,
     ClanDetailView,
     ClanCreateSerializer,

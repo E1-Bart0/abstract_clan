@@ -14,7 +14,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import path
-from .views import clan_views, clan_members_view
+from .views import clan_views, clan_member_views
 
 urlpatterns = [
     path('clans', clan_views.ClanListView.as_view(), name='clans'),
@@ -26,10 +26,10 @@ urlpatterns = [
     path('clan/add_member', clan_views.AddClanMemberView.as_view(), name='clan-add-member'),
     path('clan/remove_member', clan_views.RemoveClanMemberView.as_view(), name='clan-remove-member'),
 
-    path('clan/members', clan_members_view.ClanMembersListView.as_view(), name='clan-members'),
-    path('clan/member', clan_members_view.ClanMemberView.as_view(), name='clan-member'),
-    path('clan/member/join', clan_members_view.ClanMemberJoinView.as_view(), name='clan-member-join'),
-    path('clan/member/leave', clan_members_view.ClanMemberLeaveView.as_view(), name='clan-member-leave'),
+    path('clan/members', clan_member_views.ClanMembersListView.as_view(), name='clan-members'),
+    path('clan/member', clan_member_views.ClanMemberView.as_view(), name='clan-member'),
+    path('clan/member/join', clan_member_views.ClanMemberJoinView.as_view(), name='clan-member-join'),
+    path('clan/member/leave', clan_member_views.ClanMemberLeaveView.as_view(), name='clan-member-leave'),
 
 
 ]

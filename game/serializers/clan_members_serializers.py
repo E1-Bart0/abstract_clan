@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from game.models import GameClan, GameClanMember
-from game.serializers.clan_serializer import UserSerializer, ClanSerializer
+from game.serializers.clan_serializers import UserSerializer, ClanSerializer
 
 
 class ClanMemberSerializer(serializers.ModelSerializer):
