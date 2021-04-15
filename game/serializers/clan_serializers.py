@@ -94,7 +94,7 @@ class ClanCreateSerializer(ClanSerializer):
         user = self.context.user
         resource_data = {
             'creator': user.id,
-            'game': user.game.id if hasattr(user, 'game') else None,
+            'game': user.game.id if hasattr(user, 'game') and hasattr(user.game, 'id') else None,
         }
         self.add_to_resource_data(data, resource_data)
         return super().to_internal_value(resource_data)

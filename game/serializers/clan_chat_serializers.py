@@ -12,14 +12,6 @@ class AllMessagesSerializer(serializers.Serializer):
     created_at = serializers.DateTimeField()
     chat = serializers.PrimaryKeyRelatedField(queryset=GameClanChat.objects.all(), write_only=True)
 
-    @staticmethod
-    def validate_user(user):
-        if hasattr(user, 'clan_member'):
-            if hasattr(user.clan_member.clan, 'chats'):
-                return user
-            raise serializers.ValidationError('Clan do not have a chat')
-        raise serializers.ValidationError('User not in clan')
-
     class Meta:
         fields = '__all__'
 
@@ -64,13 +56,20 @@ class SendSerializer(AllMessagesSerializer):
         chat = self.validated_data.pop('chat')
         return chat.send(**self.validated_data)
 
+    @staticmethod
+    def validate_user(user):
+        if hasattr(user, 'clan_member'):
+            if hasattr(user.clan_member.clan, 'chats'):
+                return user
+            raise serializers.ValidationError('Clan do not have a chat')
+        raise serializers.ValidationError('User not in clan')
 
-class ShareSerializer(AllMessagesSerializer):
+
+class ShareSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField()
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
     type = serializers.CharField(max_length=20, required=True)
-    created_at = None
-    text = None
+    chat = serializers.PrimaryKeyRelatedField(queryset=GameClanChat.objects.all(), write_only=True)
 
     def to_internal_value(self, data):
         request_id = self.context.GET.get('id')
@@ -82,10 +81,17 @@ class ShareSerializer(AllMessagesSerializer):
         add_data = {
             'user': user.id,
             'type': request_type,
-            'id': request_id,
+            'id': request_id if request_id.isalpha else None,
             'chat': chat.chat_id if hasattr(chat, 'chat_id') else None
         }
         return super().to_internal_value(add_data)
+
+    def validate_user(self, user):
+        if hasattr(user, 'clan_member'):
+            if hasattr(user.clan_member.clan, 'chats'):
+                return user
+            raise serializers.ValidationError('Clan do not have a chat')
+        raise serializers.ValidationError('User not in clan')
 
     def validate_type(self, type):
         user = self.context.user
@@ -94,9 +100,13 @@ class ShareSerializer(AllMessagesSerializer):
 
         if request.exists():
             request = request.first()
-            if request.user != user:
-                return request
-            raise serializers.ValidationError('You can not share you own request')
+            if hasattr(user, 'clan_member'):
+                if user.clan_member in request.clan_chat.clan.members.all():
+                    if request.user != user:
+                        return request
+                    raise serializers.ValidationError('You can not share you own request')
+                raise serializers.ValidationError('User in another clan')
+            raise serializers.ValidationError('User not in clan')
         raise serializers.ValidationError(f'Request type "{type}" with id "{request_id}" does not exist')
 
     @staticmethod
@@ -112,3 +122,7 @@ class ShareSerializer(AllMessagesSerializer):
         request = self.validated_data.get('type')
         user = self.validated_data.get('user')
         print(f'{user} can interact with request {request.type} {request}')
+
+    class Meta:
+        model = GameClanChat
+        fields = ['user', 'type', 'id', 'chat']
