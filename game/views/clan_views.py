@@ -9,7 +9,6 @@ from game.serializers.clan_serializers import (
     ClanCreateSerializer,
     ClanUpdateSerializer,
     ClanDeleteSerializer,
-    AddClanMemberSerializer,
 )
 
 
@@ -69,26 +68,6 @@ class DeleteClanView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.delete_model()
         return Response({'OK': 'Clan was deleted'}, status=status.HTTP_200_OK)
-
-
-class AddClanMemberView(APIView):
-    serializer_class = AddClanMemberSerializer
-    model = serializer_class.Meta.model
-
-    def post(self, request):
-        data = self.get_data_from(request)
-        serializer = self.serializer_class(data=data)
-        serializer.is_valid(raise_exception=True)
-        serializer.add_member()
-        return Response({'OK': f'User was joined the clan'})
-
-    @staticmethod
-    def get_data_from(request):
-        data = {
-            'id': request.GET.get('id') or request.GET.get('clan_id'),
-            'user': request.user.id
-        }
-        return data
 
 
 class RemoveClanMemberView(APIView):

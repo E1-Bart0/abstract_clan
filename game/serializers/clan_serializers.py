@@ -29,7 +29,6 @@ class ClanSerializer(serializers.ModelSerializer):
 
 
 class ClanListSerializer(ClanSerializer):
-
     class Meta:
         model = GameClan
         fields = ['id', 'name', 'description', 'max_members', 'creator', 'created_at', 'members_count']
@@ -100,7 +99,8 @@ class ClanCreateSerializer(ClanSerializer):
         self.add_to_resource_data(data, resource_data)
         return super().to_internal_value(resource_data)
 
-    def validate_creator(self, creator):
+    @staticmethod
+    def validate_creator(creator):
         if hasattr(creator, 'clan_member'):
             raise serializers.ValidationError(f'{creator} already in clan {creator.clan_member.clan}')
         return creator
@@ -111,22 +111,3 @@ class ClanCreateSerializer(ClanSerializer):
     class Meta:
         model = GameClan
         fields = ['name', 'description', 'creator', 'game', 'max_members']
-
-
-class AddClanMemberSerializer(ClanSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=True)
-
-    class Meta:
-        model = GameClan
-        fields = ['id', 'user']
-
-    @staticmethod
-    def validate_user(user):
-        if hasattr(user, 'clan_member') or hasattr(user, 'my_clan'):
-            raise serializers.ValidationError(f'"{user}" already in clan "{user.clan_member.clan.name}"')
-        return user
-
-    def add_member(self):
-        clan = self.validated_data.get('id')
-        user = self.validated_data.get('user')
-        clan.add(user)

@@ -141,26 +141,6 @@ class ClanViewsTestCase(TestCase):
         response = self.client.post(url, data)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
-    def test_clan_add_member(self):
-        """TEST VIEW AddClanMemberView OK (POST): Adding User to the GameClan"""
-        new_user = User.objects.create(username=f'Test1', password='Blabla4321', game=self.game)
-        clan = GameClan.create(creator=new_user, name='TEST', description='TEST', game=self.game)
-
-        url = reverse('clan-add-member') + f'?id={clan.id}'
-        data = {}
-        response = self.client.post(url, data)
-        self.assertEqual(status.HTTP_200_OK, response.status_code)
-
-    def test_clan_add_member_invalid__already_in_clan(self):
-        """TEST VIEW AddClanMemberView BAD REQUEST (POST): Adding User to the GameClan,
-            But User already in the GameClan"""
-        clan = GameClan.create(creator=self.user, name='TEST', description='TEST', game=self.game)
-
-        url = reverse('clan-add-member') + f'?id={clan.id}'
-        data = {}
-        response = self.client.post(url, data)
-        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
-
     def test_clan_remove_member(self):
         """TEST VIEW RemoveClanMember OK (POST): Remove User from the GameClan"""
         clan = GameClan.create(creator=self.user, name='TEST', description='TEST', game=self.game)

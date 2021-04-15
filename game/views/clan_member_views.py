@@ -2,8 +2,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from game.serializers.clan_members_serializers import ClanMembersListSerializer, ClanMemberSerializer
-from game.views.clan_views import AddClanMemberView, RemoveClanMemberView
+from game.serializers.clan_members_serializers import ClanMembersListSerializer, ClanMemberSerializer, \
+    ClanMemberJoinSerializer
 
 
 class ClanMembersListView(APIView):
@@ -36,9 +36,33 @@ class ClanMemberView(APIView):
         return Response({'Error': f'Clan member with such id "{member_id}" does not exist'}, status.HTTP_404_NOT_FOUND)
 
 
-class ClanMemberJoinView(AddClanMemberView):
-    pass
+class ClanMemberJoinView(APIView):
+    serializer_class = ClanMemberJoinSerializer
+    model = serializer_class.Meta.model
+
+    def post(self, request):
+        data = self.get_data_from(request)
+        serializer = self.serializer_class(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.add_member()
+        return Response({'OK': f'User was joined the clan'})
+
+    @staticmethod
+    def get_data_from(request):
+        data = {
+            'id': request.GET.get('id') or request.GET.get('clan_id'),
+            'user': request.user.id
+        }
+        return data
 
 
-class ClanMemberLeaveView(RemoveClanMemberView):
-    pass
+class ClanMemberLeaveView(APIView):
+
+    @staticmethod
+    def post(request):
+        user = request.user
+        if hasattr(user, 'clan_member'):
+            clan = user.clan_member.clan
+            clan.remove(user)
+            return Response({'OK': f'User was removed from the clan'}, status.HTTP_200_OK)
+        return Response({'Error': 'User not in clan'}, status.HTTP_400_BAD_REQUEST)

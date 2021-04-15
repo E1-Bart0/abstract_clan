@@ -23,7 +23,6 @@ urlpatterns = [
     path('clan/create', clan_views.CreateClanView.as_view(), name='clan-create'),
     path('clan/update', clan_views.UpdateClanView.as_view(), name='clan-update'),
     path('clan/delete', clan_views.DeleteClanView.as_view(), name='clan-delete'),
-    path('clan/add_member', clan_views.AddClanMemberView.as_view(), name='clan-add-member'),
     path('clan/remove_member', clan_views.RemoveClanMemberView.as_view(), name='clan-remove-member'),
 
     path('clan/members', clan_member_views.ClanMembersListView.as_view(), name='clan-members'),
