@@ -10,6 +10,7 @@ class AllMessagesSerializer(serializers.Serializer):
     type = serializers.CharField(max_length=20)
     text = serializers.CharField()
     created_at = serializers.DateTimeField()
+    chat = serializers.PrimaryKeyRelatedField(queryset=GameClanChat.objects.all(), write_only=True)
 
     @staticmethod
     def validate_user(user):
@@ -47,9 +48,11 @@ class SendSerializer(AllMessagesSerializer):
 
     @staticmethod
     def _get_resource_data_from(data, request_type, user):
+        chat = user.clan_member.clan.chat if hasattr(user, 'clan_member') else None
         resource_data = {
             'user': user.id,
             'type': request_type,
+            'chat': chat.chat_id if hasattr(chat, 'chat_id') else None
         }
         for item in data:
             resource_data[item] = data[item]
@@ -58,14 +61,16 @@ class SendSerializer(AllMessagesSerializer):
         return resource_data
 
     def save(self, **kwargs):
-        user = self.validated_data.get('user')
-        return user.clan_member.clan.chat.send(**self.validated_data)
+        chat = self.validated_data.pop('chat')
+        return chat.send(**self.validated_data)
 
 
 class ShareSerializer(AllMessagesSerializer):
     id = serializers.IntegerField()
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
     type = serializers.CharField(max_length=20, required=True)
+    created_at = None
+    text = None
 
     def to_internal_value(self, data):
         request_id = self.context.GET.get('id')
@@ -73,10 +78,12 @@ class ShareSerializer(AllMessagesSerializer):
         url = self.context.path_info
         request_type = url.split('/')[-2]
 
+        chat = user.clan_member.clan.chat if hasattr(user, 'clan_member') else None
         add_data = {
             'user': user.id,
             'type': request_type,
             'id': request_id,
+            'chat': chat.chat_id if hasattr(chat, 'chat_id') else None
         }
         return super().to_internal_value(add_data)
 
@@ -101,6 +108,7 @@ class ShareSerializer(AllMessagesSerializer):
         return request
 
     def save(self, **kwargs):
+        chat = self.validated_data.pop('chat')
         request = self.validated_data.get('type')
         user = self.validated_data.get('user')
         print(f'{user} can interact with request {request.type} {request}')

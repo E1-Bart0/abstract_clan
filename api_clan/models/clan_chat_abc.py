@@ -48,9 +48,9 @@ class ClanChatABC(models.Model):
             'notification': self.notifications,
         }
         if model[type]:
-            self._crop(model[type])
-            response = model[type].create(user=user, **kwargs)
-            return response
+            msg_model = model[type]
+            self._crop(msg_model)
+            return msg_model.create(user=user, **kwargs)
 
     @staticmethod
     def _crop(model, max_count=150):
