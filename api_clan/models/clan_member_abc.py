@@ -21,7 +21,7 @@ class ClanMemberABC(models.Model):
          Sending notification about leaving"""
         if hasattr(self.clan, 'chats'):
             text_on_join = f'{self.user.username} Leaving Your Clan'
-            self.clan.chat.send(user=self.user, request_type='notification', text=text_on_join)
+            self.clan.chat.send(user=self.user, type='notification', text=text_on_join)
         if self.clan.members.count() == 1:
             self.clan.delete()
         return super().delete(*args, **kwargs)
@@ -30,7 +30,7 @@ class ClanMemberABC(models.Model):
         """Saving Clan Model. Sending notification about leaving"""
         if hasattr(self.clan, 'chats'):
             text_on_join = f'{self.user.username} Joining Your Clan'
-            self.clan.chat.send(user=self.user, request_type='notification', text=text_on_join)
+            self.clan.chat.send(user=self.user, type='notification', text=text_on_join)
         return super().save(*args, **kwargs)
 
     @classmethod

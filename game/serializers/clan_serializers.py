@@ -100,6 +100,11 @@ class ClanCreateSerializer(ClanSerializer):
         self.add_to_resource_data(data, resource_data)
         return super().to_internal_value(resource_data)
 
+    def validate_creator(self, creator):
+        if hasattr(creator, 'clan_member'):
+            raise serializers.ValidationError(f'{creator} already in clan {creator.clan_member.clan}')
+        return creator
+
     def save(self, **kwargs):
         return self.Meta.model.create(**self.validated_data)
 

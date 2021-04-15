@@ -7,7 +7,7 @@ from game.models import GameClan, Game
 from myuser.models import User
 
 
-class ClanViewsTestCase(TestCase):
+class TestPrepareClientClanUser(TestCase):
 
     def setUp(self):
         self.game = Game.objects.create(game='Test', slug='test')
@@ -16,6 +16,9 @@ class ClanViewsTestCase(TestCase):
 
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
+
+
+class TestClanViews(TestPrepareClientClanUser):
 
     def test_clan_members_view(self):
         """TEST VIEW ClanMembersListView OK (GET): Get GameClan with more info about ClanMembers"""

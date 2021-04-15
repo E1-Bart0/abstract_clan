@@ -14,7 +14,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import path
-from .views import clan_views, clan_member_views
+from .views import clan_views, clan_member_views, clan_chat_views
 
 urlpatterns = [
     path('clans', clan_views.ClanListView.as_view(), name='clans'),
@@ -31,5 +31,14 @@ urlpatterns = [
     path('clan/member/join', clan_member_views.ClanMemberJoinView.as_view(), name='clan-member-join'),
     path('clan/member/leave', clan_member_views.ClanMemberLeaveView.as_view(), name='clan-member-leave'),
 
+    path('clan/chat', clan_chat_views.ClanChatView.as_view(), name='clan-chat'),
+    path('clan/chat/send_text', clan_chat_views.ClanChatSendAllViews.as_view(), name='clan-chat-send-text'),
+    path('clan/chat/request_resource', clan_chat_views.ClanChatSendAllViews.as_view(),
+         name='clan-chat-request-resource'),
+    path('clan/chat/request_item', clan_chat_views.ClanChatSendAllViews.as_view(), name='clan-chat-request-item'),
 
+    path('clan/chat/request_resource/share', clan_chat_views.ClanChatShareAllRequest.as_view(),
+         name='clan-chat-request-resource-share'),
+    path('clan/chat/request_item/share', clan_chat_views.ClanChatShareAllRequest.as_view(),
+         name='clan-chat-request-item-share'),
 ]

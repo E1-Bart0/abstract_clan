@@ -40,15 +40,15 @@ class ClanChatABC(models.Model):
         all_msgs = text_messages.union(resource_request, requests_item, notifications)
         return all_msgs
 
-    def send(self, user, request_type, **kwargs):
+    def send(self, user, type, **kwargs):
         model = {
-            'message': self.messages,
-            'requests_resource': self.requests_resource,
-            'requests_item': self.requests_item,
+            'send_text': self.messages,
+            'request_resource': self.requests_resource,
+            'request_item': self.requests_item,
             'notification': self.notifications,
         }
-        self._crop(model[request_type])
-        response = model[request_type].create(user=user, **kwargs)
+        self._crop(model[type])
+        response = model[type].create(user=user, **kwargs)
         return response
 
     @staticmethod
