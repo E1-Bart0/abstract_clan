@@ -52,5 +52,5 @@ class GameChatNotification(ChatMessageABC):
     clan_chat = models.ForeignKey(GameClanChat, on_delete=models.CASCADE, related_name='notifications')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='my_notifications')
     type = models.CharField(max_length=30, default='notification')
-    text = models.CharField(default='Notification', max_length=20)
+    text = models.CharField(default='Notification', max_length=150)
 

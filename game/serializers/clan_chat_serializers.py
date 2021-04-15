@@ -11,6 +11,14 @@ class AllMessagesSerializer(serializers.Serializer):
     text = serializers.CharField()
     created_at = serializers.DateTimeField()
 
+    @staticmethod
+    def validate_user(user):
+        if hasattr(user, 'clan_member'):
+            if hasattr(user.clan_member.clan, 'chats'):
+                return user
+            raise serializers.ValidationError('Clan do not have a chat')
+        raise serializers.ValidationError('User not in clan')
+
     class Meta:
         fields = '__all__'
 
@@ -34,30 +42,27 @@ class SendSerializer(AllMessagesSerializer):
         url = self.context.path_info
         request_type = url.split('/')[-1]
 
-        add_data = {
+        resource_data = self._get_resource_data_from(data, request_type, user)
+        return super().to_internal_value(resource_data)
+
+    @staticmethod
+    def _get_resource_data_from(data, request_type, user):
+        resource_data = {
             'user': user.id,
             'type': request_type,
         }
-
         for item in data:
-            add_data[item] = data[item]
-
+            resource_data[item] = data[item]
         if request_type != 'send_text':
-            add_data['text'] = request_type
-
-        return super().to_internal_value(add_data)
-
-    def validate_user(self, user):
-        if hasattr(user, 'clan_member') and hasattr(user.clan_member.clan, 'chats'):
-            return user
-        raise serializers.ValidationError('User not in clan')
+            resource_data['text'] = request_type
+        return resource_data
 
     def save(self, **kwargs):
         user = self.validated_data.get('user')
         return user.clan_member.clan.chat.send(**self.validated_data)
 
 
-class ShareSerializer(serializers.Serializer):
+class ShareSerializer(AllMessagesSerializer):
     id = serializers.IntegerField()
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
     type = serializers.CharField(max_length=20, required=True)
@@ -65,7 +70,6 @@ class ShareSerializer(serializers.Serializer):
     def to_internal_value(self, data):
         request_id = self.context.GET.get('id')
         user = self.context.user
-
         url = self.context.path_info
         request_type = url.split('/')[-2]
 
@@ -76,18 +80,10 @@ class ShareSerializer(serializers.Serializer):
         }
         return super().to_internal_value(add_data)
 
-    def validate_user(self, user):
-        if hasattr(user, 'clan_member') and hasattr(user.clan_member.clan, 'chats'):
-            return user
-        raise serializers.ValidationError('User not in clan')
-
     def validate_type(self, type):
         user = self.context.user
         request_id = self.context.GET.get('id')
-        if 'resource' in type:
-            request = GameChatRequestResource.objects.filter(id=request_id)
-        else:
-            request = GameChatRequestItem.objects.filter(id=request_id)
+        request = self._get_query_request(request_id, type)
 
         if request.exists():
             request = request.first()
@@ -95,6 +91,14 @@ class ShareSerializer(serializers.Serializer):
                 return request
             raise serializers.ValidationError('You can not share you own request')
         raise serializers.ValidationError(f'Request type "{type}" with id "{request_id}" does not exist')
+
+    @staticmethod
+    def _get_query_request(request_id, request_type):
+        if 'resource' in request_type:
+            request = GameChatRequestResource.objects.filter(id=request_id)
+        else:
+            request = GameChatRequestItem.objects.filter(id=request_id)
+        return request
 
     def save(self, **kwargs):
         request = self.validated_data.get('type')
