@@ -144,16 +144,32 @@ class ClanViewsTestCase(TestCase):
     def test_clan_remove_member(self):
         """TEST VIEW RemoveClanMember OK (POST): Remove User from the GameClan"""
         clan = GameClan.create(creator=self.user, name='TEST', description='TEST', game=self.game)
+        new_user = User.objects.create(username='TEst1', password='blabla4321', game=self.game)
+        clan.add(new_user)
 
         url = reverse('clan-remove-member')
-        data = {}
-        response = self.client.post(url, data)
+        param = f'?member_id={new_user.id}'
+        response = self.client.post(url + param)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
-    def test_clan_remove_invalid__user_not_in_clan(self):
+    def test_clan_remove_invalid__user_not_exists(self):
         """TEST VIEW RemoveClanMemberView BAD REQUEST (POST): Removing User from the GameClan,
-            But User not in the GameClan"""
+            But User not exists"""
+        clan = GameClan.create(creator=self.user, name='TEST', description='TEST', game=self.game)
+
         url = reverse('clan-remove-member')
-        data = {}
-        response = self.client.post(url, data)
+        param = f'?member_id=10'
+        response = self.client.post(url + param)
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+    def test_clan_remove_invalid__user_not_in_user_clan(self):
+        """TEST VIEW RemoveClanMemberView BAD REQUEST (POST): Removing User from the GameClan,
+            But User in another GameClan"""
+        clan = GameClan.create(creator=self.user, name='TEST', description='TEST', game=self.game)
+        new_user = User.objects.create(username='TEst1', password='blabla4321', game=self.game)
+        clan = GameClan.create(creator=new_user, name='TEST1', description='TEST', game=self.game)
+
+        url = reverse('clan-remove-member')
+        param = f'?member_id={new_user.id}'
+        response = self.client.post(url + param)
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)

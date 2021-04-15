@@ -1,7 +1,7 @@
 from django.http import QueryDict
 from rest_framework import serializers
 
-from game.models import GameClan, Game
+from game.models import GameClan, Game, GameClanMember
 from myuser.models import User
 
 
@@ -111,3 +111,36 @@ class ClanCreateSerializer(ClanSerializer):
     class Meta:
         model = GameClan
         fields = ['name', 'description', 'creator', 'game', 'max_members']
+
+
+class ClanRemoveMemberSerializer(ClanSerializer):
+    clan_id = serializers.PrimaryKeyRelatedField(queryset=GameClan.objects.all())
+    member_id = serializers.PrimaryKeyRelatedField(queryset=GameClanMember.objects.all())
+
+    def to_internal_value(self, data):
+        user = self.context.user
+        member_id = self.context.GET.get('member_id')
+
+        resource_data = {
+            'clan_id': user.my_clan.id if hasattr(user, 'my_clan') else None,
+            'creator': user.id,
+            'member_id': member_id,
+        }
+        self.add_to_resource_data(data, resource_data)
+        return super().to_internal_value(resource_data)
+
+    def validate_member_id(self, member):
+        user = self.context.user
+        if hasattr(user, 'my_clan'):
+            if member in user.my_clan.members.all():
+                return member
+        raise serializers.ValidationError('User must be in your clan to remove him')
+
+    def remove_member(self):
+        clan = self.validated_data['clan_id']
+        member = self.validated_data['member_id']
+        clan.remove(member.user)
+
+    class Meta:
+        model = GameClan
+        fields = ['clan_id', 'member_id', 'creator']

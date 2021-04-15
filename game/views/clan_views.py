@@ -8,7 +8,7 @@ from game.serializers.clan_serializers import (
     ClanDetailView,
     ClanCreateSerializer,
     ClanUpdateSerializer,
-    ClanDeleteSerializer,
+    ClanDeleteSerializer, ClanRemoveMemberSerializer,
 )
 
 
@@ -71,12 +71,11 @@ class DeleteClanView(APIView):
 
 
 class RemoveClanMemberView(APIView):
+    serializer_class = ClanRemoveMemberSerializer
+    model = serializer_class.Meta.model
 
-    @staticmethod
-    def post(request):
-        user = request.user
-        if hasattr(user, 'clan_member'):
-            clan = user.clan_member.clan
-            clan.remove(user)
-            return Response({'OK': f'User was removed from the clan'}, status.HTTP_200_OK)
-        return Response({'Error': 'User not in clan'}, status.HTTP_400_BAD_REQUEST)
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data, context=request)
+        serializer.is_valid(raise_exception=True)
+        serializer.remove_member()
+        return Response({'OK': 'User was deleted'})
