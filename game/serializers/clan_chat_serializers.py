@@ -6,6 +6,7 @@ from myuser.models import User
 
 
 class AllMessagesSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
     user = UserSerializer()
     type = serializers.CharField(max_length=20)
     text = serializers.CharField()
@@ -25,6 +26,7 @@ class ChatSerializer(serializers.ModelSerializer):
 
 
 class SendSerializer(AllMessagesSerializer):
+    id = None
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
     type = serializers.CharField(max_length=20, required=True)
     text = serializers.CharField(required=True)

@@ -17,15 +17,15 @@ from django.urls import path
 from .views import clan_views, clan_member_views, clan_chat_views
 
 urlpatterns = [
-    path('clans', clan_views.ClanListView.as_view(), name='clans'),
     path('clan', clan_views.ClanView.as_view(), name='clan'),
+    path('clan/list', clan_views.ClanListView.as_view(), name='clans'),
 
     path('clan/create', clan_views.CreateClanView.as_view(), name='clan-create'),
     path('clan/update', clan_views.UpdateClanView.as_view(), name='clan-update'),
     path('clan/delete', clan_views.DeleteClanView.as_view(), name='clan-delete'),
     path('clan/remove_member', clan_views.RemoveClanMemberView.as_view(), name='clan-remove-member'),
 
-    path('clan/members', clan_member_views.ClanMembersListView.as_view(), name='clan-members'),
+    path('clan/member/list', clan_member_views.ClanMembersListView.as_view(), name='clan-members'),
     path('clan/member', clan_member_views.ClanMemberView.as_view(), name='clan-member'),
     path('clan/member/join', clan_member_views.ClanMemberJoinView.as_view(), name='clan-member-join'),
     path('clan/member/leave', clan_member_views.ClanMemberLeaveView.as_view(), name='clan-member-leave'),

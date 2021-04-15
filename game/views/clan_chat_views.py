@@ -22,8 +22,7 @@ class ClanChatView(ClanMembersListView):
     def _get_clan_id_from(request, **kwargs):
         clan_id = request.GET.get('clan_id')
         user = request.user
-        if not clan_id.isdigit():
-            clan_id = None
+        if not clan_id:
             if hasattr(user, 'clan_member') and hasattr(user.clan_member.clan, 'chat'):
                 clan_id = request.user.clan_member.clan.id
         return clan_id
